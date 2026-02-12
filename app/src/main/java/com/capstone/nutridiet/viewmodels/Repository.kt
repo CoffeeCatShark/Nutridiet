@@ -22,6 +22,9 @@ class BMIRepository(private val dao: UserBMIDAO) {
     val currentWeightGoal = _weightGoal.asStateFlow()
     private val _activityLevel = MutableStateFlow(BMICalorieUtils.ActivityLevel.MODERATE)
     val currentActivityLevel = _activityLevel.asStateFlow()
+    private val _calorieGoal = MutableStateFlow(2000)
+    val dailyCalorieGoal = _calorieGoal.asStateFlow()
+
     suspend fun initializeBMI() {
         val existing = dao.getBMIHeight()
         if (existing == null) {

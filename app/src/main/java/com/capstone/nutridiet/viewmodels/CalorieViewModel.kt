@@ -17,10 +17,7 @@ import kotlinx.coroutines.launch
 
 class CalorieViewModel(private val dao: UserBMIDAO): ViewModel() {
     val repository = BMIRepository(dao)
-
-
     var test_ = mutableStateOf<String>("TEST")
-
     fun test(){
         viewModelScope.launch(Dispatchers.IO) {
             this@CalorieViewModel.test_.value = dao.getBMILevel()?: "HI"        //FOR TESTING PURPOSES
