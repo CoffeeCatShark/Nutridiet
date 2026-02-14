@@ -57,4 +57,11 @@ interface UserBMIDAO {
     )
     suspend fun changeActivityLvl(activityLevel: String)
 
+    @Query("""
+        UPDATE UserBMIData
+        SET calorieGoal = :calorieGoal
+        WHERE bmiID = 0
+    """)
+    suspend fun  setCalorieGoal(calorieGoal: Int)
+
 }

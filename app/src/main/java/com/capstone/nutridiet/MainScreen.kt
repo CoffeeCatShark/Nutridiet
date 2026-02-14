@@ -23,12 +23,15 @@ import androidx.navigation.compose.rememberNavController
 import com.capstone.nutridiet.navigation.Screen
 import androidx.navigation.compose.composable
 import com.capstone.nutridiet.database.BMIDatabase
+import com.capstone.nutridiet.database.FoodDatabase
 import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.database.UserBMIData
 import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
 import com.capstone.nutridiet.viewmodels.CalorieViewModel
 import com.capstone.nutridiet.viewmodels.CalorieViewModelFactory
+import com.capstone.nutridiet.viewmodels.FoodViewModel
+import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.example.yourapp.screens.BMIScreen
 import com.example.yourapp.screens.CaloriesScreen
 import com.example.yourapp.screens.FoodScreen
@@ -51,11 +54,13 @@ fun MainScreen() {
 
     val context = LocalContext.current
     val bmiDB = BMIDatabase.getDatabase(context)
-    val dao = bmiDB.dao
+    val foodDB = FoodDatabase.getDatabase(context)
+    val bmiDao = bmiDB.dao
+    val foodDao = foodDB.dao
 
-    val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(dao))
-    val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(dao))
-
+    val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
+    val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDao))
+    val foodVM: FoodViewModel = viewModel(factory = FoodViewModelFactory(foodDao))
 
     val navController = rememberNavController()
 
@@ -105,7 +110,7 @@ fun MainScreen() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Dashboard.route) {
-                Dashboard()
+                Dashboard(foodVM, navController)
             }
             composable(Screen.BMI.route) {
                 BMIScreen(bmiVM)
@@ -118,6 +123,9 @@ fun MainScreen() {
             }
             composable(Screen.Insights.route) {
                 InsightsScreen()
+            }
+            composable(Screen.FoodData.route) {
+                FoodDataScreen(foodVM)
             }
 
         }

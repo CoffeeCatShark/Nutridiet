@@ -11,9 +11,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
 class BMIRepository(private val dao: UserBMIDAO) {
-
     val height = mutableStateOf<Int>(555555555)
     val weight = mutableStateOf<Int>(555555555)
     val age = mutableStateOf<Int>(555555555)
@@ -58,14 +58,15 @@ class BMIRepository(private val dao: UserBMIDAO) {
 
             calculateBMI(weight.value,height.value)             //FOR TESTING
              _weightGoal.value = getRecommendedWeightGoal(bmiActual.value)
-            _calorieGoal.value = calculateDailyCalorieGoal(
+            dao.setCalorieGoal(calculateDailyCalorieGoal(
                 weight.value,
                 height.value,
                 age.value,
                 isMale.value,
                 currentActivityLevel.value,
-                currentWeightGoal.value
-            )
+                currentWeightGoal.value))
+            _calorieGoal.value = dao.getBMICalorieGoal()!!
+
             getDailyCalorieGoal()
     }
 
@@ -113,6 +114,7 @@ class BMIRepository(private val dao: UserBMIDAO) {
         )
         _calorieGoal.value = newGoal
         dao.changeActivityLvl(level)
+        dao.setCalorieGoal(newGoal)
     }
 
 
