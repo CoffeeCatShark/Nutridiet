@@ -5,11 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.FoodData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.coroutines.coroutineContext
 
 class FoodViewModel(val dao: FoodDao): ViewModel() {
 val repository = FoodRepository(dao)
@@ -51,6 +53,10 @@ val repository = FoodRepository(dao)
         }
     }
 
-
+    fun Delete(food: FoodData){
+        viewModelScope.launch {
+            repository.deleteFood(food)
+        }
+    }
 
 }

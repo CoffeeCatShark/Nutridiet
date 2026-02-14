@@ -135,7 +135,6 @@ fun BMIScreen(viewModel: BMIViewModel) {
             }
 
             viewModel.UpdateBMI(height,weight,age,isMale)
-
             ageField = ""
             weightField = ""
             heightField = ""

@@ -15,17 +15,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.capstone.nutridiet.database.FoodData
+import com.capstone.nutridiet.viewmodels.FoodRepository
 import com.capstone.nutridiet.viewmodels.FoodViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun FoodDataScreen(viewModel: FoodViewModel){
+
         val foods by viewModel.allFoods.collectAsState()
         Text("Food count: ${foods.size}")
 
         LazyColumn {
             items(foods) { food ->
-                FoodItem(food)
+                FoodItem(food, viewModel)
             }
         }
         Spacer(modifier = Modifier.height(18.dp))
@@ -41,7 +47,7 @@ fun FoodDataScreen(viewModel: FoodViewModel){
     }
 
     @Composable
-    fun FoodItem(food: FoodData) {
+    fun FoodItem(food: FoodData, viewModel: FoodViewModel) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -53,8 +59,16 @@ fun FoodDataScreen(viewModel: FoodViewModel){
                 Text(text = "Protein: ${food.foodProtein} g")
                 Text(text = "Score: ${food.foodScore}")
                 Text(text = "ID: ${food.foodID}")
-                Button( onClick = {}) { Text("Edit")}
-                Button( onClick = {}) { Text("Delete")}
+                Button( onClick = {
+
+
+
+                }) { Text("Edit")}
+                Button( onClick = {
+
+                    viewModel.Delete(food)
+
+                }) { Text("Delete")}
             }
         }
 }
