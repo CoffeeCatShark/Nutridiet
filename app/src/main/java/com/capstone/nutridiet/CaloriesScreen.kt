@@ -20,7 +20,7 @@ fun CaloriesScreen(viewModel: CalorieViewModel) {
     //val userProfile by viewModel.userProfile.collectAsState()
     val activityLevel by viewModel.repository.currentActivityLevel.collectAsState()
     val weightGoal by viewModel.repository.currentWeightGoal.collectAsState()
-    //val dailyGoal by viewModel.dailyCalorieGoal.collectAsState()
+    val dailyGoal by viewModel.repository.dailyCalorieGoal.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.test()                            //FOR TESTING
@@ -48,6 +48,12 @@ fun CaloriesScreen(viewModel: CalorieViewModel) {
                         style = MaterialTheme.typography.headlineSmall
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "$dailyGoal calories",
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
                 }
             }
         }
