@@ -35,7 +35,6 @@ class BMIViewModel(private val dao: UserBMIDAO): ViewModel() {
             repository.initializeBMI()
             repository.loadBMI()
         }
-        loadBMI()
     }
 
 
@@ -55,7 +54,9 @@ class BMIViewModel(private val dao: UserBMIDAO): ViewModel() {
             repository.weight.value = weight
             repository.age.value = age
             repository.isMale.value = isMale
-            repository.loadBMI()
+            ////////////////////////////////////////////////////////////////////////////
+            repository.getDailyCalorieGoal()
+            repository.updateDailyCalorieGoal(repository.currentActivityLevel.value.name)
         }
     }
 
@@ -74,7 +75,11 @@ class BMIViewModel(private val dao: UserBMIDAO): ViewModel() {
 
 
     fun calculateBMI(weightLbs: Int, heightIn: Int) {
-        bmiActual.value = (weightLbs * 703) / (heightIn * heightIn).toDouble()      //FOR TESTING
+        if (heightIn == 0) {bmiActual.value = 0.99999
+            return
+        }
+        // Convert to Double BEFORE the division to prevent integer rounding
+        bmiActual.value = (weightLbs.toDouble() * 703.0) / (heightIn.toDouble() * heightIn.toDouble())
     }
 
 }

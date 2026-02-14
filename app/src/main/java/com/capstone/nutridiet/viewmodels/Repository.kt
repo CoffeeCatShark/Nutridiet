@@ -1,5 +1,6 @@
 package com.capstone.nutridiet.viewmodels
 
+import android.R.attr.category
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.BMICalorieUtils
@@ -17,7 +18,7 @@ class BMIRepository(private val dao: UserBMIDAO) {
     val weight = mutableStateOf<Int>(555555555)
     val age = mutableStateOf<Int>(555555555)
     val isMale = mutableStateOf<Boolean>(true)
-    val bmiActual = mutableStateOf<Double>(99.0)
+    val bmiActual = mutableStateOf<Double>(99999999.0)
     private val _weightGoal = MutableStateFlow(BMICalorieUtils.WeightGoal.MAINTAIN)
     val currentWeightGoal = _weightGoal.asStateFlow()
     private val _activityLevel = MutableStateFlow(BMICalorieUtils.ActivityLevel.MODERATE)
@@ -25,22 +26,27 @@ class BMIRepository(private val dao: UserBMIDAO) {
     private val _calorieGoal = MutableStateFlow(2000)
     val dailyCalorieGoal = _calorieGoal.asStateFlow()
 
+    suspend fun updateProfile(){
+        loadBMI()
+    }
+
     suspend fun initializeBMI() {
-        val existing = dao.getBMIHeight()
+        val existing = dao.getBMIAge()
         if (existing == null) {
             dao.UpsertBMIData(
                 UserBMIData(
                     bmiID = 0,
-                    height = 0,
-                    weight = 0,
-                    age = 0,
+                    height = 170,
+                    weight = 60,
+                    age = 25,
                     isMale = true,
-                    activityLevel = BMICalorieUtils.ActivityLevel.MODERATE.name
+                    activityLevel = BMICalorieUtils.ActivityLevel.MODERATE.name,
+                    calorieGoal = 2000
                 )
             )
         }
-        calculateBMI(weight.value,height.value)         //ADD loadBMI() IF IT BREAKS
         loadBMI()
+        calculateBMI(weight.value,height.value)         //ADD loadBMI() IF IT BREAKS
         _weightGoal.value = getRecommendedWeightGoal(bmiActual.value)       //TESTING PURPOSES
     }
 
@@ -52,6 +58,14 @@ class BMIRepository(private val dao: UserBMIDAO) {
 
             calculateBMI(weight.value,height.value)             //FOR TESTING
              _weightGoal.value = getRecommendedWeightGoal(bmiActual.value)
+            _calorieGoal.value = calculateDailyCalorieGoal(
+                weight.value,
+                height.value,
+                age.value,
+                isMale.value,
+                currentActivityLevel.value,
+                currentWeightGoal.value
+            )
             getDailyCalorieGoal()
     }
 
@@ -79,26 +93,40 @@ class BMIRepository(private val dao: UserBMIDAO) {
             bmiActual.value = (weightLbs * 703) / (heightIn * heightIn).toDouble()
         }
         else{
-            bmiActual.value = 0.00
+            bmiActual.value = 9.9876
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////////
     suspend fun setActivityLevel(level: BMICalorieUtils.ActivityLevel) {
         _activityLevel.value = level
-        updateDailyCalorieGoal(level.name)
+        updateDailyCalorieGoal(level.name.toString())
     }
 
 
     suspend fun updateDailyCalorieGoal(level: String) {
+        val newGoal = calculateDailyCalorieGoal(
+            weight = dao.getBMIWeight() ?: 999,
+            height = dao.getBMIHeight() ?: 999,
+            age = dao.getBMIAge() ?: 999,
+            isMale = dao.getBMIGender() ?: true,
+        )
+        _calorieGoal.value = newGoal
         dao.changeActivityLvl(level)
     }
 
 
-    suspend fun getDailyCalorieGoal(){
-            val h = dao.getBMILevel().toString()
-            this@BMIRepository._activityLevel.value =
-                BMICalorieUtils.ActivityLevel.fromString(h)
+    suspend fun getDailyCalorieGoal() {
+        // 1. Get the value from the DAO (it might be null)
+        val h = dao.getBMILevel()
+
+        // 2. Use the Elvis operator (?:) to provide a default string if h is null
+        // Make sure "MODERATE" matches a valid name in your ActivityLevel enum
+        val activityString = h ?: BMICalorieUtils.ActivityLevel.MODERATE.name
+
+        // 3. Pass the guaranteed non-null string to the fromString method
+        this@BMIRepository._activityLevel.value =
+            BMICalorieUtils.ActivityLevel.fromString(activityString)
     }
 
     ///////////////////////////////////////////////////////////////////////////////////

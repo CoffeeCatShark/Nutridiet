@@ -11,7 +11,8 @@ data class UserBMIData(
     val age: Int,
     val isMale: Boolean,
     val activityLevel: String,
+    val calorieGoal: Int,
 
     @PrimaryKey(autoGenerate = false)
-    val bmiID: Int = 0
+    val bmiID: Int
 )

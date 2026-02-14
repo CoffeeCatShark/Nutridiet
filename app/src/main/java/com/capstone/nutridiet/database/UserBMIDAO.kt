@@ -40,10 +40,13 @@ interface UserBMIDAO {
     suspend fun getBMIAge(): Int?
 
     @Query("SELECT isMale FROM UserBMIData WHERE bmiID = 0 ")
-    suspend fun getBMIGender(): Boolean?
+    suspend fun getBMIGender(): Boolean
 
     @Query("SELECT activityLevel FROM UserBMIData WHERE bmiID = 0 ")
-    suspend fun getBMILevel(): String?
+    suspend fun getBMILevel(): String
+
+    @Query("SELECT calorieGoal FROM UserBMIData WHERE bmiID = 0 ")
+    suspend fun getBMICalorieGoal(): Int?
 
     @Query(
         """

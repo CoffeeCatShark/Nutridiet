@@ -19,13 +19,17 @@ class CalorieViewModel(private val dao: UserBMIDAO): ViewModel() {
 
 
     fun initialize() {
-        viewModelScope.launch { repository.initializeBMI() }
+        viewModelScope.launch {
+            repository.initializeBMI()
+            repository.loadBMI()
+        }
     }
 
 
     fun setActivityLevel(level: BMICalorieUtils.ActivityLevel) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.setActivityLevel(level)
+            repository.loadBMI()
         }
     }
 

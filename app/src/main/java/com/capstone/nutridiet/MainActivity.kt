@@ -18,6 +18,7 @@ import androidx.room.Room
 import com.capstone.nutridiet.database.BMIDatabase
 import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.ui.theme.NutridietTheme
+import com.capstone.nutridiet.viewmodels.BMIRepository
 import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
 import com.capstone.nutridiet.viewmodels.CalorieViewModel
@@ -36,8 +37,11 @@ class MainActivity : ComponentActivity() {
                 val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDAO))
                 val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDAO))
 
+
+
                 // Initialize BMI row once when app starts
                 LaunchedEffect(Unit) {
+
                     bmiVM.initialize()       // inserts default row if missing
                     calorieVM.initialize()   // loads activity level or other defaults
                 }
@@ -49,7 +53,7 @@ class MainActivity : ComponentActivity() {
 }
 /* TO DO ============ NOTE: THIS IS A SHORT LIST. ACTUAL TASKS ARE VERY VERY VERY LONG.
     1. BMI - DONE
-    2. CALORIES - WIP [CALORIE CALCULATION WIP]
+    2. CALORIES - DONE
     3. FOOD DATABASE SETUP(NEEDS DATABASE) (FILLING UP TABLE, OFFLOAD TO GROUPMATES??) - NOT YET
     4. CHATBOT(PROBABLY NEEDS DATABASE) - NOT YET
     5. CONSUMPTION THING TAB(NEEDS DATABASE) - NOT YET

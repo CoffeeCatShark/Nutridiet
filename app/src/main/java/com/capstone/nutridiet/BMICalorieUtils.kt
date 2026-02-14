@@ -1,6 +1,5 @@
 package com.capstone.nutridiet
 
-import com.capstone.nutridiet.BMICalorieUtils.ActivityLevel.SEDENTARY
 
 object BMICalorieUtils {
 
