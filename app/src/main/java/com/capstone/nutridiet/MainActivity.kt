@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
                 val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDAO))
                 val foodVM: FoodViewModel = viewModel(factory = FoodViewModelFactory(foodDao))
 
+
                 // Initialize BMI row once when app starts
                 LaunchedEffect(Unit) {
                     bmiVM.initialize()       // inserts default row if missing
@@ -58,12 +59,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 /* TO DO ============ NOTE: THIS IS A SHORT LIST. ACTUAL TASKS ARE VERY VERY VERY LONG.
+NOTE: (FILLING UP FOOD DATA TABLE, OFFLOAD TO GROUPMATES, GUIDE THEM)
 NOTE: TURN DASHBOARD INTO CHECKING LIST FOR FOOD ITEMS FIRST
     1. BMI - DONE
     2. CALORIES - DONE
-    3. FOOD DATABASE SETUP(FILLING UP TABLE, OFFLOAD TO GROUPMATES??) - WIP
-            - EDIT POP UP BUTTON NEEDED
-            - ADD BUTTON NEEDED
+    3. FOOD DATABASE SETUP - DONE
     4. CHATBOT(PROBABLY NEEDS DATABASE) - NOT YET
     5. CONSUMPTION THING TAB(NEEDS DATABASE) - NOT YET
 

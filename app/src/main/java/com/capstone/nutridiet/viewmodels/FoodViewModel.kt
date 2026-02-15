@@ -59,6 +59,22 @@ val repository = FoodRepository(dao)
         }
     }
 
+    fun EditFoodData(name: String,sodium: Double,satFat: Double,protein: Double,calories: Double,score: Double){
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.upsertFood(
+                FoodData(
+                    name,
+                    sodium,
+                    protein,
+                    calories,
+                    score,
+                    satFat,
+                    null
+                )
+            )
+        }
+    }
+
     fun SaveNewFoodData(name: String,sodium: Double,satFat: Double,protein: Double,calories: Double,score: Double){
         viewModelScope.launch(Dispatchers.IO) {
             repository.insertFood(
@@ -77,9 +93,10 @@ val repository = FoodRepository(dao)
 
     fun CalculateFoodScore(sodium: Double,satFat: Double,protein: Double,calories: Double): Double{
         val newFoodScore: Double
-
-        newFoodScore = 0.0
-        //ADD FORMULA, REPLACE TEMP
+        if(sodium == 0.0 || satFat == 0.0 || protein == 0.0 || calories == 0.0){
+            return 0.0
+        }
+        newFoodScore = 100 - (sodium / 10) - (satFat * 5) - (calories / 50) + (protein * 3)
 
         return newFoodScore
     }

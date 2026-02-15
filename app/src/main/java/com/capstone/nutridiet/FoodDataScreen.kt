@@ -48,6 +48,7 @@ fun FoodDataScreen(viewModel: FoodViewModel) {
     
     var showAddFood by remember { mutableStateOf(false) }
 
+
     if (showAddFood) {
         DisplayAddFood(
             onBack = { showAddFood = false },
@@ -100,6 +101,15 @@ fun FoodDataScreen(viewModel: FoodViewModel) {
 
     @Composable
     fun FoodItem(food: FoodData, viewModel: FoodViewModel) {
+        var showEditFood by remember { mutableStateOf(false) }
+
+        if (showEditFood) {
+            DisplayEditFood(
+                onBack = {showEditFood = false},
+                viewModel = viewModel,
+                food = food
+            )
+        }
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,7 +123,7 @@ fun FoodDataScreen(viewModel: FoodViewModel) {
                 Text(text = "ID: ${food.foodID}")
                 Button( onClick = {
 
-
+                    showEditFood = true
 
                 }) { Text("Edit")}
                 Button( onClick = {
@@ -128,6 +138,91 @@ fun FoodDataScreen(viewModel: FoodViewModel) {
 
 }
 
+@Composable
+fun DisplayEditFood(onBack: () -> Unit, viewModel: FoodViewModel,food: FoodData){
+    Surface() {
+        var nameField by remember { mutableStateOf(food.foodName) }
+        var sodiumField by remember { mutableStateOf(food.foodSodium.toString()) }
+        var satFatField by remember { mutableStateOf(food.foodSatFat.toString()) }
+        var proteinField by remember { mutableStateOf(food.foodProtein.toString()) }
+        var caloriesField by remember { mutableStateOf(food.foodCalories.toString()) }
+        var scoreField by remember { mutableStateOf(food.foodScore) }
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            OutlinedTextField(
+                value = nameField,
+                onValueChange = { nameField = it },
+                label = { Text("Food Name") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text
+                ),
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            OutlinedTextField(
+                value = sodiumField,
+                onValueChange = { sodiumField = it },
+                label = { Text("Sodium") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            OutlinedTextField(
+                value = satFatField,
+                onValueChange = { satFatField = it },
+                label = { Text("Saturated Fat") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            OutlinedTextField(
+                value = proteinField,
+                onValueChange = { proteinField = it },
+                label = { Text("Protein") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            OutlinedTextField(
+                value = caloriesField,
+                onValueChange = { caloriesField = it },
+                label = { Text("Calories") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number
+                ),
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(onClick = {
+
+                val name = nameField
+                val sodium = sodiumField.toDouble()
+                val satFat = satFatField.toDouble()
+                val protein = proteinField.toDouble()
+                val calories = caloriesField.toDouble()
+                val score = scoreField
+
+                viewModel.EditFoodData(name,sodium,satFat,protein,calories,score)
+
+                onBack()
+            }) {
+                Text("Save")
+            }
+        }
+    }
+
+}
 
 @Composable
 fun DisplayAddFood(onBack: () -> Unit, viewModel: FoodViewModel){
@@ -205,10 +300,8 @@ fun DisplayAddFood(onBack: () -> Unit, viewModel: FoodViewModel){
                 val satFat = satFatField.toDouble()
                 val protein = proteinField.toDouble()
                 val calories = caloriesField.toDouble()
-
-
-
                 val score = viewModel.CalculateFoodScore(sodium,satFat,protein,calories)
+
 
                 viewModel.SaveNewFoodData(name,sodium,satFat,protein,calories,score)
                 onBack()

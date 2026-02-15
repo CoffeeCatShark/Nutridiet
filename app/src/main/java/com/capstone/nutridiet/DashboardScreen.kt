@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.room.util.TableInfo
 import com.capstone.nutridiet.database.FoodData
 import com.capstone.nutridiet.navigation.Screen
 import com.capstone.nutridiet.viewmodels.FoodViewModel
@@ -28,10 +29,30 @@ import com.capstone.nutridiet.viewmodels.FoodViewModel
 @Composable
 fun Dashboard(viewModel: FoodViewModel, navController: NavController) {
 
-    Button(onClick = {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        item { FoodDataScreenCard(navController) }
+    }
 
-        navController.navigate(Screen.FoodData.route)
+}
 
-    }) { Text("Go to Food Data Screen")}
 
+@Composable
+fun FoodDataScreenCard(navController: NavController){
+    Card(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+    ) {
+        Text("Food Data Screen")
+
+        Button(onClick = {
+            navController.navigate(Screen.FoodData.route)
+        }) { Text("Go to Food Data Screen")}
+    }
 }
