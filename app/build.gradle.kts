@@ -1,9 +1,26 @@
+import java.io.FileInputStream
+import java.util.Properties
+android.buildFeatures.buildConfig = true
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.devtools.ksp)
+    // ...
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
+/////////////////////////////////////////////////////////
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+} else {
+    throw GradleException("local.properties file not found!")
+}
+
+val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY")
+    ?: throw GradleException("GEMINI_API_KEY not found in local.properties")
+        ///JUST FOR AI
 
 android {
     namespace = "com.capstone.nutridiet"
@@ -12,6 +29,7 @@ android {
     }
 
     defaultConfig {
+
         applicationId = "com.capstone.nutridiet"
         minSdk = 26
         targetSdk = 36
@@ -19,6 +37,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
     }
 
     buildTypes {
@@ -52,6 +72,14 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     ksp(libs.androidx.room.compiler)
 
+
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    //UPDATE IF HAS ERRORS MAYBE ///////////////////////////////////////////////////////////
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
