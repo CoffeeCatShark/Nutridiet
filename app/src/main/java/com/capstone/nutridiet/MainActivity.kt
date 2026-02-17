@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.capstone.nutridiet.database.BMIDatabase
@@ -26,11 +27,13 @@ import com.capstone.nutridiet.viewmodels.CalorieViewModel
 import com.capstone.nutridiet.viewmodels.CalorieViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
+import com.capstone.nutridiet.viewmodels.InsightViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val chatViewModel = ViewModelProvider(this)[InsightViewModel::class.java]
         setContent {
             NutridietTheme {
                 val context = LocalContext.current
@@ -52,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     bmiVM.initialize()       // inserts default row if missing
                     calorieVM.initialize()   // loads activity level or other defaults
                 }
-                MainScreen()
+                MainScreen(chatViewModel)
 
             }
         }
@@ -64,9 +67,8 @@ NOTE: TURN DASHBOARD INTO CHECKING LIST FOR FOOD ITEMS FIRST
     1. BMI - DONE
     2. CALORIES - DONE
     3. FOOD DATABASE SETUP - DONE
-    4. CHATBOT(PROBABLY NEEDS DATABASE) - NOT YET
+    4. CHATBOT(PROBABLY NEEDS DATABASE) - DONE MAYBE [ADD MAYBE THE DATA OF FOOD]
     5. CONSUMPTION THING TAB(NEEDS DATABASE) - NOT YET
-
     FINAL STUFFS : USE CASES, CLEAN THE CODE FROM TESTINGS
 
 ////

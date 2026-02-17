@@ -32,6 +32,7 @@ import com.capstone.nutridiet.viewmodels.CalorieViewModel
 import com.capstone.nutridiet.viewmodels.CalorieViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
+import com.capstone.nutridiet.viewmodels.InsightViewModel
 import com.example.yourapp.screens.BMIScreen
 import com.example.yourapp.screens.CaloriesScreen
 import com.example.yourapp.screens.FoodScreen
@@ -49,7 +50,7 @@ val navItemList = listOf(
 )
 
 @Composable
-fun MainScreen() {
+fun MainScreen(chatViewModel: InsightViewModel) {
 
 
     val context = LocalContext.current
@@ -122,7 +123,7 @@ fun MainScreen() {
                 CaloriesScreen(calorieVM)
             }
             composable(Screen.Insights.route) {
-                InsightsScreen()
+                InsightsScreen(chatViewModel)
             }
             composable(Screen.FoodData.route) {
                 FoodDataScreen(foodVM)
