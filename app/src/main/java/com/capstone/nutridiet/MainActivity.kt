@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.capstone.nutridiet.database.BMIDatabase
+import com.capstone.nutridiet.database.DailyLogDao
 import com.capstone.nutridiet.database.FoodDatabase
 import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.ui.theme.NutridietTheme
@@ -25,6 +26,8 @@ import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
 import com.capstone.nutridiet.viewmodels.CalorieViewModel
 import com.capstone.nutridiet.viewmodels.CalorieViewModelFactory
+import com.capstone.nutridiet.viewmodels.DailyLogViewModel
+import com.capstone.nutridiet.viewmodels.DailyLogViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
@@ -40,15 +43,21 @@ class MainActivity : ComponentActivity() {
                 val bmiDB = BMIDatabase.getDatabase(context) // get singleton Room database
                 val bmiDAO = bmiDB.dao
 
+
                 val foodDB = FoodDatabase.getDatabase(context)
                 val foodDao = foodDB.dao
+                val dailyLogDao = foodDB.dailyLogDao
 
             ////////////////////////////////////////////////////////////////////////////
 
                 val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDAO))
                 val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDAO))
                 val foodVM: FoodViewModel = viewModel(factory = FoodViewModelFactory(foodDao))
-
+                val dailyLogVM: DailyLogViewModel = viewModel(factory = DailyLogViewModelFactory(
+                    dailyLogDao,
+                    foodDao
+                )
+                )
 
                 // Initialize BMI row once when app starts
                 LaunchedEffect(Unit) {

@@ -5,10 +5,19 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [FoodData::class], version = 1, exportSchema = false)
+@Database(
+    entities = [
+        FoodData::class,
+        DailyLog::class,   // add this
+        FoodEntry::class   // add this
+    ],
+    version = 2,           // bump version
+    exportSchema = false
+)
 abstract class FoodDatabase : RoomDatabase() {
 
-    abstract val dao: FoodDao////////////////////////////////////////////
+    abstract val dao: FoodDao
+    abstract val dailyLogDao: DailyLogDao  // add this
 
     companion object {
         @Volatile
@@ -22,6 +31,7 @@ abstract class FoodDatabase : RoomDatabase() {
                     "nutridietFood_db"
                 )
                     .createFromAsset("initialDatabase/FoodData.db")
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
