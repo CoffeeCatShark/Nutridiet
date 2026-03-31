@@ -120,7 +120,12 @@ fun MainScreen(chatViewModel: InsightViewModel) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Dashboard.route) {
-                Dashboard(foodVM, navController)
+                Dashboard(
+                    foodVM = foodVM,
+                    dailyLogVM = dailyLogVM,
+                    bmiVM = bmiVM,
+                    calorieVM = calorieVM,
+                    navController = navController)
             }
             composable(Screen.BMI.route) {
                 BMIScreen(bmiVM)

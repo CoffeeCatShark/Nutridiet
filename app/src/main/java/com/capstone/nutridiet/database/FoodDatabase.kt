@@ -31,7 +31,6 @@ abstract class FoodDatabase : RoomDatabase() {
                     "nutridietFood_db"
                 )
                     .createFromAsset("initialDatabase/FoodData.db")
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

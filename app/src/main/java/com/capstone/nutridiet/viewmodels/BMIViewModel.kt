@@ -10,16 +10,26 @@ import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.database.UserBMIData
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class BMIViewModel(private val dao: UserBMIDAO): ViewModel() {
     val repository = BMIRepository(dao)
-    val height = mutableStateOf<Int>(555555555)
-    val weight = mutableStateOf<Int>(555555555)
-    val age = mutableStateOf<Int>(555555555)
-    val isMale = mutableStateOf<Boolean>(true)
+    private val _bmiActual = MutableStateFlow<Double>(0.0)
+    val bmiActual: StateFlow<Double> = _bmiActual
 
-    val bmiActual = mutableStateOf<Double>(repository.bmiActual.value)
+    private val _height = MutableStateFlow<Int>(0)
+    val height: StateFlow<Int> = _height
+
+    private val _weight = MutableStateFlow<Int>(0)
+    val weight: StateFlow<Int> = _weight
+
+    private val _age = MutableStateFlow<Int>(0)
+    val age: StateFlow<Int> = _age
+
+    private val _isMale = MutableStateFlow<Boolean>(true)
+    val isMale: StateFlow<Boolean> = _isMale
 
     fun test(){
         viewModelScope.launch(Dispatchers.IO) {
@@ -46,10 +56,10 @@ class BMIViewModel(private val dao: UserBMIDAO): ViewModel() {
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             dao.updateBMIData(height,weight,age,isMale)
-            this@BMIViewModel.height.value = height
-            this@BMIViewModel.weight.value = weight
-            this@BMIViewModel.age.value = age
-            this@BMIViewModel.isMale.value = isMale
+            this@BMIViewModel._height.value = height
+            this@BMIViewModel._weight.value = weight
+            this@BMIViewModel._age.value = age
+            this@BMIViewModel._isMale.value = isMale
             repository.height.value = height
             repository.weight.value = weight
             repository.age.value = age
@@ -57,29 +67,31 @@ class BMIViewModel(private val dao: UserBMIDAO): ViewModel() {
             ////////////////////////////////////////////////////////////////////////////
             repository.getDailyCalorieGoal()
             repository.updateDailyCalorieGoal(repository.currentActivityLevel.value.name)
+            calculateBMI(weight,height)
         }
     }
 
 
     fun loadBMI() {
         viewModelScope.launch(Dispatchers.IO) {
-            height.value = dao.getBMIHeight() ?: 321
-            weight.value = dao.getBMIWeight() ?: 321
-            age.value = dao.getBMIAge() ?: 321
-            isMale.value = dao.getBMIGender() ?: true
+            _height.value = dao.getBMIHeight() ?: 321
+            _weight.value = dao.getBMIWeight() ?: 321
+            _age.value = dao.getBMIAge() ?: 321
+            _isMale.value = dao.getBMIGender() ?: true
 
             calculateBMI(weight.value,height.value)             //FOR TESTING
+            UpdateBMI(_height.value,_weight.value,_age.value,_isMale.value)
             }
         }
 
 
 
     fun calculateBMI(weightLbs: Int, heightIn: Int) {
-        if (heightIn == 0) {bmiActual.value = 0.99999
+        if (heightIn == 0) {_bmiActual.value = 0.99999
             return
         }
         // Convert to Double BEFORE the division to prevent integer rounding
-        bmiActual.value = (weightLbs.toDouble() * 703.0) / (heightIn.toDouble() * heightIn.toDouble())
+        _bmiActual.value = (weightLbs.toDouble() * 703.0) / (heightIn.toDouble() * heightIn.toDouble())
     }
 
 }
