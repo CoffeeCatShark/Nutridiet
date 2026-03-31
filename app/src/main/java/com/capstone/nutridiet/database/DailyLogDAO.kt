@@ -17,6 +17,10 @@ interface DailyLogDao {
     suspend fun insertFoodEntry(entry: FoodEntry)
 
     @Transaction
+    @Query("SELECT * FROM daily_log WHERE userId = :userId ORDER BY date DESC")
+    fun getAllLogsWithFoods(userId: Int): Flow<List<DailyLogWithFoods>>
+
+    @Transaction
     @Query("SELECT * FROM daily_log WHERE date = :date AND userId = :userId")
     fun getLogWithFoods(userId: Int, date: String): Flow<DailyLogWithFoods?>
 
