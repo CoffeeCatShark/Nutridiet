@@ -71,7 +71,9 @@ fun MessageInput(onMessageSend: (String) -> Unit){
         verticalAlignment = Alignment.CenterVertically
     )
     {
-        OutlinedTextField(value = message, onValueChange = {message = it})
+        OutlinedTextField(value = message, onValueChange = {message = it},
+            modifier = Modifier.height(60.dp)
+        )
         IconButton(onClick = {
             if(message.isBlank())
                 return@IconButton

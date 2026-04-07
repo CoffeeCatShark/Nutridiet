@@ -33,12 +33,6 @@ fun CaloriesScreen(viewModel: CalorieViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        item{
-            Text("Calorie Settings",
-                style = MaterialTheme.typography.headlineMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(viewModel.test_.toString())                //FOR TESTING
-        }
 
         item {
             Card(modifier = Modifier.fillMaxWidth()) {

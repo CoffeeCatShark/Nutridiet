@@ -38,11 +38,6 @@ fun BMIScreen(viewModel: BMIViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(20.dp))               //FOR TESTING
-        Text(viewModel.repository.bmiActual.value.toString())              //FOR TESTING
-        Spacer(modifier = Modifier.height(20.dp))              //FOR TESTING
-        Text(viewModel.repository.weight.value.toString())                 //FOR TESTING
-
 
         Text("Input Your BMI")
 
