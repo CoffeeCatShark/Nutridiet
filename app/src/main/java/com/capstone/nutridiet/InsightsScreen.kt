@@ -1,5 +1,6 @@
 package com.example.yourapp.screens
 
+import android.R
 import android.R.attr.text
 import android.R.id.message
 import android.renderscript.ScriptGroup
@@ -56,7 +57,8 @@ fun AppHeader(){
     ){
         Text(
             modifier = Modifier.padding(16.dp),
-            text = "AI Insights")
+            text = "AI Insights",
+            color = Color.White)
     }
 }
 
