@@ -101,7 +101,9 @@ NOTE: TURN DASHBOARD INTO CHECKING LIST FOR FOOD ITEMS FIRST
 
     UPDATED///////////////////////////
     9. ADD BMI SCREEN AND CALORIE SCREEN TO DASHBOARD
-    10.
+    10. Add sodium levels
+    11. Add BMI Inch Height Converters
+
 
 
 ////
