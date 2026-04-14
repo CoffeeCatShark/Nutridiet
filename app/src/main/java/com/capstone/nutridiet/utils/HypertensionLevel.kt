@@ -2,7 +2,7 @@ package com.capstone.nutridiet.utils
 
 data class BloodPressureResult(
     val systolic: Int,
-    val diastolic: Int,
+    val diastolic: Int,  // ✅ added
     val level: HypertensionLevel,
     val label: String,
     val description: String
@@ -17,44 +17,38 @@ enum class HypertensionLevel {
 }
 
 object BloodPressureUtils {
-    fun analyze(reading: Int): BloodPressureResult {
-        // reading is systolic only for single input
-        return when {
-            reading < 120 -> BloodPressureResult(
-                systolic = reading,
-                diastolic = 0,
-                level = HypertensionLevel.NORMAL,
-                label = "Normal",
-                description = "Your blood pressure is in a healthy range."
-            )
-            reading < 130 -> BloodPressureResult(
-                systolic = reading,
-                diastolic = 0,
-                level = HypertensionLevel.ELEVATED,
-                label = "Elevated",
-                description = "Your blood pressure is slightly above normal. Lifestyle changes are recommended."
-            )
-            reading < 140 -> BloodPressureResult(
-                systolic = reading,
-                diastolic = 0,
-                level = HypertensionLevel.STAGE_1,
-                label = "Hypertension Stage 1",
-                description = "You have Stage 1 Hypertension. Diet and lifestyle changes are important."
-            )
-            reading < 180 -> BloodPressureResult(
-                systolic = reading,
-                diastolic = 0,
-                level = HypertensionLevel.STAGE_2,
-                label = "Hypertension Stage 2",
-                description = "You have Stage 2 Hypertension. Medical treatment is likely needed."
-            )
-            else -> BloodPressureResult(
-                systolic = reading,
-                diastolic = 0,
-                level = HypertensionLevel.CRISIS,
-                label = "Hypertensive Crisis",
-                description = "DANGER: Seek emergency medical care immediately."
-            )
+    fun analyze(systolic: Int, diastolic: Int): BloodPressureResult {
+        // ✅ uses BOTH readings — whichever is higher determines the level
+        val level = when {
+            systolic >= 180 || diastolic >= 120 -> HypertensionLevel.CRISIS
+            systolic >= 140 || diastolic >= 90  -> HypertensionLevel.STAGE_2
+            systolic >= 130 || diastolic >= 80  -> HypertensionLevel.STAGE_1
+            systolic >= 120 && diastolic < 80   -> HypertensionLevel.ELEVATED
+            else                                -> HypertensionLevel.NORMAL
         }
+
+        val label = when (level) {
+            HypertensionLevel.NORMAL   -> "Normal"
+            HypertensionLevel.ELEVATED -> "Elevated"
+            HypertensionLevel.STAGE_1  -> "Hypertension Stage 1"
+            HypertensionLevel.STAGE_2  -> "Hypertension Stage 2"
+            HypertensionLevel.CRISIS   -> "Hypertensive Crisis"
+        }
+
+        val description = when (level) {
+            HypertensionLevel.NORMAL   -> "Your blood pressure is in a healthy range."
+            HypertensionLevel.ELEVATED -> "Your blood pressure is slightly above normal. Lifestyle changes are recommended."
+            HypertensionLevel.STAGE_1  -> "You have Stage 1 Hypertension. Diet and lifestyle changes are important."
+            HypertensionLevel.STAGE_2  -> "You have Stage 2 Hypertension. Medical treatment is likely needed."
+            HypertensionLevel.CRISIS   -> "DANGER: Seek emergency medical care immediately."
+        }
+
+        return BloodPressureResult(
+            systolic = systolic,
+            diastolic = diastolic,
+            level = level,
+            label = label,
+            description = description
+        )
     }
 }

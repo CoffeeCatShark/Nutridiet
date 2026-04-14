@@ -18,7 +18,8 @@ import com.capstone.nutridiet.viewmodels.DietPlanViewModel
 @Composable
 fun DietPlanScreen(viewModel: DietPlanViewModel) {
 
-    val bpReading by viewModel.bpReading.collectAsState()
+    val systolic by viewModel.systolic.collectAsState()
+    val diastolic by viewModel.diastolic.collectAsState()
     val bpResult by viewModel.bpResult.collectAsState()
     val isGenerating by viewModel.isGenerating.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
@@ -31,31 +32,52 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Header
         Text(
             text = "Diet Plan",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "Enter your blood pressure to generate a personalized diet plan.",
+            text = "Enter your blood pressure for a personalized diet plan.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Blood Pressure Input
-        OutlinedTextField(
-            value = bpReading,
-            onValueChange = { viewModel.onBpReadingChange(it) },
-            label = { Text("Systolic Blood Pressure (mmHg)") },
-            placeholder = { Text("e.g. 120") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        // ✅ Two input fields side by side
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            isError = errorMessage != null
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = systolic,
+                onValueChange = { viewModel.onSystolicChange(it) },
+                label = { Text("Systolic") },
+                placeholder = { Text("e.g. 120") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                isError = errorMessage != null
+            )
+            OutlinedTextField(
+                value = diastolic,
+                onValueChange = { viewModel.onDiastolicChange(it) },
+                label = { Text("Diastolic") },
+                placeholder = { Text("e.g. 80") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                isError = errorMessage != null
+            )
+        }
+
+        // ✅ helper text
+        Text(
+            text = "Format: Systolic / Diastolic  (e.g. 120 / 80)",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // Error message
+        // Error
         errorMessage?.let {
             Text(
                 text = it,
@@ -68,7 +90,7 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
         Button(
             onClick = { viewModel.analyzeBloodPressure() },
             modifier = Modifier.fillMaxWidth(),
-            enabled = bpReading.isNotBlank()
+            enabled = systolic.isNotBlank() && diastolic.isNotBlank()
         ) {
             Text("Analyze Blood Pressure")
         }
@@ -79,7 +101,7 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = when (result.level) {
-                        HypertensionLevel.NORMAL  -> MaterialTheme.colorScheme.primaryContainer
+                        HypertensionLevel.NORMAL   -> MaterialTheme.colorScheme.primaryContainer
                         HypertensionLevel.ELEVATED -> MaterialTheme.colorScheme.secondaryContainer
                         HypertensionLevel.STAGE_1  -> MaterialTheme.colorScheme.tertiaryContainer
                         HypertensionLevel.STAGE_2  -> MaterialTheme.colorScheme.errorContainer
@@ -94,7 +116,7 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Reading: ${result.systolic} mmHg",
+                        text = "Reading: ${result.systolic} / ${result.diastolic} mmHg",  // ✅ shows both
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -104,8 +126,6 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-
-                    // Generate Diet Plan Button
                     Button(
                         onClick = { viewModel.generateDietPlan() },
                         modifier = Modifier.fillMaxWidth(),

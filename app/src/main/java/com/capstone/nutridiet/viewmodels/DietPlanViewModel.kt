@@ -43,6 +43,11 @@ class DietPlanViewModel(
     )
 
     // Blood pressure state
+
+
+
+
+
     private val _bpReading = MutableStateFlow("")
     val bpReading: StateFlow<String> = _bpReading
 
@@ -69,13 +74,31 @@ class DietPlanViewModel(
         _bpResult.value = null // reset result on change
     }
 
+    private val _systolic = MutableStateFlow("")
+    val systolic: StateFlow<String> = _systolic
+
+    private val _diastolic = MutableStateFlow("")
+    val diastolic: StateFlow<String> = _diastolic
+
+    fun onSystolicChange(value: String) {
+        _systolic.value = value
+        _bpResult.value = null
+    }
+
+    fun onDiastolicChange(value: String) {
+        _diastolic.value = value
+        _bpResult.value = null
+    }
+
     fun analyzeBloodPressure() {
-        val reading = _bpReading.value.toIntOrNull()
-        if (reading == null || reading <= 0) {
-            _errorMessage.value = "Please enter a valid blood pressure reading."
+        val sys = _systolic.value.toIntOrNull()
+        val dia = _diastolic.value.toIntOrNull()
+
+        if (sys == null || dia == null || sys <= 0 || dia <= 0) {
+            _errorMessage.value = "Please enter valid systolic and diastolic readings."
             return
         }
-        _bpResult.value = BloodPressureUtils.analyze(reading)
+        _bpResult.value = BloodPressureUtils.analyze(sys, dia)
         _errorMessage.value = null
     }
 
@@ -89,7 +112,7 @@ class DietPlanViewModel(
                 val foodNames = foodDao.GetAllFoodNames().joinToString(", ")
                 val calorieGoals = userDAO.getBMICalorieGoal()
                 val prompt = """
-                    Patient Blood Pressure: ${result.systolic} mmHg (Systolic)
+                    Patient Blood Pressure: ${result.systolic} / ${result.diastolic} mmHg
                     Hypertension Level: ${result.label}
                     
                     Available foods from our database:
