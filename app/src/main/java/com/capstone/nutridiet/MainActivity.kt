@@ -4,24 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Room
 import com.capstone.nutridiet.database.BMIDatabase
-import com.capstone.nutridiet.database.DailyLogDao
 import com.capstone.nutridiet.database.FoodDatabase
-import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.ui.theme.NutridietTheme
-import com.capstone.nutridiet.viewmodels.BMIRepository
+import com.capstone.nutridiet.utils.PreferencesManager
 import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
 import com.capstone.nutridiet.viewmodels.CalorieViewModel
@@ -31,15 +24,22 @@ import com.capstone.nutridiet.viewmodels.DailyLogViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
+import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val chatViewModel = ViewModelProvider(this)[InsightViewModel::class.java]
+        //val chatViewModel = ViewModelProvider(this)[InsightViewModel::class.java]
         setContent {
             NutridietTheme {
                 val context = LocalContext.current
+
+                val prefsManager = remember { PreferencesManager(context) }
+                val isFirstLaunch by prefsManager.isFirstLaunch.collectAsState(initial = null)
+
                 val bmiDB = BMIDatabase.getDatabase(context) // get singleton Room database
                 val bmiDAO = bmiDB.dao
 
@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
                 val foodDao = foodDB.dao
                 val dailyLogDao = foodDB.dailyLogDao
 
+                val chatViewModel: InsightViewModel = viewModel(
+                    factory = InsightViewModelFactory(bmiDAO, foodDao)
+                )
             ////////////////////////////////////////////////////////////////////////////
 
                 val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDAO))
@@ -63,8 +66,20 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     bmiVM.initialize()       // inserts default row if missing
                     calorieVM.initialize()   // loads activity level or other defaults
+                    chatViewModel.initialize()
                 }
-                MainScreen(chatViewModel)
+
+                if (isFirstLaunch != null) {
+                    MainScreen(
+                        chatViewModel = chatViewModel,
+                        isFirstLaunch = isFirstLaunch!!,
+                        onFirstLaunchComplete = {
+                            MainScope().launch {
+                                prefsManager.setFirstLaunchComplete()
+                            }
+                        }
+                    )
+                }
 
             }
         }

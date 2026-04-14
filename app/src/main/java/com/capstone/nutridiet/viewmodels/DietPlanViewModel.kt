@@ -6,6 +6,7 @@ import com.capstone.nutridiet.BuildConfig
 import com.capstone.nutridiet.database.DietPlan
 import com.capstone.nutridiet.database.DietPlanDao
 import com.capstone.nutridiet.database.FoodDao
+import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.utils.BloodPressureResult
 import com.capstone.nutridiet.utils.BloodPressureUtils
 import com.google.ai.client.generativeai.GenerativeModel
@@ -21,7 +22,8 @@ import java.time.LocalDate
 
 class DietPlanViewModel(
     private val dietPlanDao: DietPlanDao,
-    private val foodDao: FoodDao
+    private val foodDao: FoodDao,
+    private val userDAO: UserBMIDAO
 ) : ViewModel() {
 
     // Gemini model — same setup as InsightViewModel
@@ -85,7 +87,7 @@ class DietPlanViewModel(
             try {
                 // fetch food names from database
                 val foodNames = foodDao.GetAllFoodNames().joinToString(", ")
-
+                val calorieGoals = userDAO.getBMICalorieGoal()
                 val prompt = """
                     Patient Blood Pressure: ${result.systolic} mmHg (Systolic)
                     Hypertension Level: ${result.label}
@@ -93,10 +95,14 @@ class DietPlanViewModel(
                     Available foods from our database:
                     $foodNames
                     
-                    Based on the patient's hypertension level, generate a structured 
+                    Current Calorie Goal:
+                    $calorieGoals
+                    
+                    Based on the patient's hypertension level and current calorie goal, generate a structured 
                     one-day diet plan using ONLY foods from the list above.
                     
                     Format the response as:
+                            Calorie Goal: [Total Foods Calorie] / [Calorie Goal]
                    - Breakfast: [foods]
                    - Lunch: [foods]
                    - Dinner: [foods]

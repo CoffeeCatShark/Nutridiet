@@ -43,6 +43,7 @@ import com.example.yourapp.screens.InsightsScreen
 import com.example.yourapp.screens.DailyDietScreen
 import com.example.yourapp.screens.DietPlanScreen
 import com.example.yourapp.screens.FoodPickerScreen
+import com.example.yourapp.screens.OnboardingScreen
 
 data class NavigationItem(
     val screen: Screen,
@@ -55,7 +56,10 @@ val navItemList = listOf(
 )
 
 @Composable
-fun MainScreen(chatViewModel: InsightViewModel) {
+fun MainScreen(chatViewModel: InsightViewModel,
+               isFirstLaunch: Boolean,
+               onFirstLaunchComplete: () -> Unit
+) {
 
 
     val context = LocalContext.current
@@ -63,10 +67,11 @@ fun MainScreen(chatViewModel: InsightViewModel) {
     val foodDB = FoodDatabase.getDatabase(context)
     val bmiDao = bmiDB.dao
     val foodDao = foodDB.dao
+    val userDao = bmiDB.dao
     val dailyLogDao = foodDB.dailyLogDao
     val dietPlanDao = foodDB.dietPlanDao
     val dietPlanVM: DietPlanViewModel = viewModel(
-        factory = DietPlanViewModelFactory(dietPlanDao, foodDao)
+        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, userDao)
     )
 
     val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
@@ -129,9 +134,22 @@ fun MainScreen(chatViewModel: InsightViewModel) {
     { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(innerPadding)
+            startDestination = if (isFirstLaunch) Screen.Onboarding.route else Screen.Dashboard.route  // ✅ go directly
+         ,modifier = Modifier.padding(innerPadding)
         ) {
+
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(
+                    bmiVM = bmiVM,
+                    onOnboardingComplete = {
+                        onFirstLaunchComplete()
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(Screen.Dashboard.route) {
                 Dashboard(
                     foodVM = foodVM,

@@ -27,25 +27,58 @@ import com.capstone.nutridiet.viewmodels.MessageModel
 
 @Composable
 fun InsightsScreen(viewModel: InsightViewModel) {
-    val responseText by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize()
     ) {
+        // Header
         AppHeader()
-        Text(text = responseText)
 
-        MessageList(modifier = Modifier.weight(1f).padding(16.dp)
-            ,viewModel.messageList)
+        // Message list takes all remaining space
+        MessageList(
+            modifier = Modifier
+                .weight(1f)  // ✅ pushes input to bottom
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            messageList = viewModel.messageList
+        )
 
-        MessageInput(onMessageSend = {
+        // Input always stays at the bottom
+        HorizontalDivider()
+        MessageInput(
+            onMessageSend = { viewModel.sendMessage(it) }
+        )
+    }
+}
 
-            viewModel.sendMessage(it)
+@Composable
+fun MessageInput(onMessageSend: (String) -> Unit) {
+    var message by remember { mutableStateOf("") }
 
-        })
-
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value = message,
+            onValueChange = { message = it },
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 56.dp),  // ✅ heightIn instead of fixed height
+            placeholder = { Text("Ask something...") }
+        )
+        IconButton(onClick = {
+            if (message.isBlank()) return@IconButton
+            onMessageSend(message)
+            message = ""
+        }) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Send,
+                contentDescription = "Send"
+            )
+        }
     }
 }
 
@@ -60,33 +93,6 @@ fun AppHeader(){
             text = "AI Insights",
             color = Color.White)
     }
-}
-
-@Composable
-fun MessageInput(onMessageSend: (String) -> Unit){
-
-    var message by remember { mutableStateOf("") }
-
-    Row(
-        modifier = Modifier
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    )
-    {
-        OutlinedTextField(value = message, onValueChange = {message = it},
-            modifier = Modifier.height(60.dp)
-        )
-        IconButton(onClick = {
-            if(message.isBlank())
-                return@IconButton
-            onMessageSend(message)
-            message = ""
-        }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = "Send")}
-    }
-
 }
 
 @Composable
