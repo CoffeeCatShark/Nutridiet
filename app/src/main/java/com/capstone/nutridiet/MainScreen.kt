@@ -32,6 +32,8 @@ import com.capstone.nutridiet.viewmodels.CalorieViewModel
 import com.capstone.nutridiet.viewmodels.CalorieViewModelFactory
 import com.capstone.nutridiet.viewmodels.DailyLogViewModel
 import com.capstone.nutridiet.viewmodels.DailyLogViewModelFactory
+import com.capstone.nutridiet.viewmodels.DietPlanViewModel
+import com.capstone.nutridiet.viewmodels.DietPlanViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
@@ -39,6 +41,7 @@ import com.example.yourapp.screens.BMIScreen
 import com.example.yourapp.screens.CaloriesScreen
 import com.example.yourapp.screens.InsightsScreen
 import com.example.yourapp.screens.DailyDietScreen
+import com.example.yourapp.screens.DietPlanScreen
 import com.example.yourapp.screens.FoodPickerScreen
 
 data class NavigationItem(
@@ -61,6 +64,10 @@ fun MainScreen(chatViewModel: InsightViewModel) {
     val bmiDao = bmiDB.dao
     val foodDao = foodDB.dao
     val dailyLogDao = foodDB.dailyLogDao
+    val dietPlanDao = foodDB.dietPlanDao
+    val dietPlanVM: DietPlanViewModel = viewModel(
+        factory = DietPlanViewModelFactory(dietPlanDao, foodDao)
+    )
 
     val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
     val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDao))
@@ -86,29 +93,35 @@ fun MainScreen(chatViewModel: InsightViewModel) {
                     label = { Text("Dashboard") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Dashboard") }
                 )
-                NavigationBarItem(
+                /*NavigationBarItem(
                     selected = currentRoute == Screen.BMI.route,
                     onClick = { navController.navigate(Screen.BMI.route) },
                     label = { Text("BMI") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "BMI") }
-                )
+                )*/
                 NavigationBarItem(
                     selected = currentRoute == Screen.Food.route,
                     onClick = { navController.navigate(Screen.Food.route) },
                     label = { Text("Food") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Food") }
                 )
-                NavigationBarItem(
+                /*NavigationBarItem(
                     selected = currentRoute == Screen.Calorie.route,
                     onClick = { navController.navigate(Screen.Calorie.route) },
                     label = { Text("Calories") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Calories") }
-                )
+                )*/
                 NavigationBarItem(
                     selected = currentRoute == Screen.Insights.route,
                     onClick = { navController.navigate(Screen.Insights.route) },
                     label = { Text("AI Insights") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Insights") }
+                )
+                NavigationBarItem(
+                    selected = currentRoute == Screen.DietPlan.route,
+                    onClick = { navController.navigate(Screen.DietPlan.route) },
+                    label = { Text("Diet Plan") },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Diet Plan") }
                 )
             }
         }
@@ -150,6 +163,9 @@ fun MainScreen(chatViewModel: InsightViewModel) {
                     onFoodAdded = { navController.popBackStack() }, // ✅ go back after adding
                     onBack = { navController.popBackStack() }
                 )
+            }
+            composable(Screen.DietPlan.route) {
+                DietPlanScreen(viewModel = dietPlanVM)
             }
         }
     }

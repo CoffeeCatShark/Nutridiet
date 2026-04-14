@@ -22,6 +22,9 @@ interface FoodDao {
     @Query("SELECT * FROM FoodData WHERE foodID = :foodId")
     suspend fun GetFoodById(foodId: Int): FoodData?
 
+    @Query("SELECT foodName FROM FoodData ORDER BY foodID DESC")
+    suspend fun GetAllFoodNames(): List<String>
+
     @Delete
     suspend fun DeleteFood(foodData: FoodData)
 
