@@ -24,9 +24,7 @@ val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY")
 
 android {
     namespace = "com.capstone.nutridiet"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
 
