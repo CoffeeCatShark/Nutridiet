@@ -129,6 +129,9 @@ fun MainScreen(chatViewModel: InsightViewModel,
                     label = { Text("Diet Plan") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Diet Plan") }
                 )
+
+
+
             }
         }
     )
@@ -185,6 +188,9 @@ fun MainScreen(chatViewModel: InsightViewModel,
             }
             composable(Screen.DietPlan.route) {
                 DietPlanScreen(viewModel = dietPlanVM)
+            }
+            composable(Screen.BPHistory.route) {
+                BPHistoryScreen(viewModel = dietPlanVM)  // ✅ pass dietPlanVM
             }
         }
     }

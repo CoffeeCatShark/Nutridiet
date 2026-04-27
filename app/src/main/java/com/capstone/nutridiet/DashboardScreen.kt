@@ -2,6 +2,7 @@ package com.capstone.nutridiet
 
 import android.R.attr.fontWeight
 import android.R.attr.onClick
+import android.R.attr.text
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
@@ -80,6 +81,31 @@ fun Dashboard(
             SummaryCard(todayLog)
         }
 
+        item {
+            Text(
+                text = "Blood Pressure History",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    /*Text(
+                        text = "${allFoods.size} foods available",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )*/
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { navController.navigate(Screen.BPHistory.route) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Check Blood Pressure History")
+                    }
+                }
+            }
+        }
+
+
         // BMI Card (from BMIViewModel)
         item {
             Text(
@@ -100,7 +126,7 @@ fun Dashboard(
                                 bmi < 18.5 -> "Underweight"
                                 bmi < 25.0 -> "Normal"
                                 bmi < 30.0 -> "Overweight"
-                                else       -> "Obese"
+                                else -> "Obese"
                             }
                         }",
                         style = MaterialTheme.typography.bodyMedium,
@@ -199,5 +225,7 @@ fun Dashboard(
         }
 
         item { Spacer(modifier = Modifier.height(80.dp)) }
+
+
     }
-}
+    }

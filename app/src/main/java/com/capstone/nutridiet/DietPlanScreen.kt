@@ -24,49 +24,7 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
     val isGenerating by viewModel.isGenerating.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val savedDietPlan by viewModel.savedDietPlan.collectAsState()
-    val bpHistory by viewModel.bpHistory.collectAsState()
 
-    if (bpHistory.isNotEmpty()) {
-        Text(
-            text = "Blood Pressure History",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                bpHistory.forEach { log ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${log.systolic}/${log.diastolic} mmHg",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = log.hypertensionLevel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = when (log.hypertensionLevel) {
-                                "Normal"               -> MaterialTheme.colorScheme.primary
-                                "Elevated"             -> MaterialTheme.colorScheme.secondary
-                                "Hypertension Stage 1" -> MaterialTheme.colorScheme.tertiary
-                                else                   -> MaterialTheme.colorScheme.error
-                            }
-                        )
-                        Text(
-                            text = log.date,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    HorizontalDivider()
-                }
-            }
-        }
-    }
     Column(
         modifier = Modifier
             .fillMaxSize()
