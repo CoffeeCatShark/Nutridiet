@@ -106,7 +106,7 @@ NOTE: TURN DASHBOARD INTO CHECKING LIST FOR FOOD ITEMS FIRST
     10. Add sodium levels
     11. Add BMI Inch Height Converters
     12. change to non american length standards (lbs to kg, g, etc.)
-    13.
+    13. MAKE TEXT LARGER
 
 ////
 Fetch the whole FoodData

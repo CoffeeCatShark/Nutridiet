@@ -2,12 +2,15 @@ package com.capstone.nutridiet.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.capstone.nutridiet.database.FNRIDatabase
+import com.capstone.nutridiet.database.FNRIFood
 import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.FoodData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -16,7 +19,16 @@ import kotlin.coroutines.coroutineContext
 class FoodViewModel(val dao: FoodDao): ViewModel() {
 val repository = FoodRepository(dao)
 
+    private val _fnriSuggestions = MutableStateFlow<List<FNRIFood>>(emptyList())
+    val fnriSuggestions: StateFlow<List<FNRIFood>> = _fnriSuggestions.asStateFlow()
 
+    fun searchFNRI(query: String) {
+        _fnriSuggestions.value = FNRIDatabase.search(query)
+    }
+
+    fun clearFNRISuggestions() {
+        _fnriSuggestions.value = emptyList()
+    }
      fun test(score: Double, id: Int){
          viewModelScope.launch(Dispatchers.IO) {
              repository.test(score,id)

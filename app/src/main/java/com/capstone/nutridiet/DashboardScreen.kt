@@ -192,7 +192,7 @@ fun Dashboard(
                         onClick = { navController.navigate(Screen.FoodData.route) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Add/Edit/Remove Foods")
+                        Text("Add Foods")
                     }
                 }
             }
