@@ -4,18 +4,21 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.BuildConfig
+import com.capstone.nutridiet.database.BloodPressureDao
 import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.UserBMIDAO
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.ServerException
 import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class InsightViewModel(
     private val bmiDAO: UserBMIDAO,
-    private val foodDao: FoodDao
+    private val foodDao: FoodDao,
+    private val bpDao: BloodPressureDao
 ) : ViewModel() {
 
     private var generativeModel: GenerativeModel? = null
@@ -30,13 +33,20 @@ class InsightViewModel(
             val bmiLevel = bmiDAO.getBMILevel() ?: "Unknown"
             val bmiCalGoal = bmiDAO.getBMICalorieGoal()?.toString() ?: "Unknown"
 
+            val bpHistory = bpDao.getRecentLogs(userId = 1, limit = 10)
+                .first()  // gets the current list once
+                .joinToString("\n") { log ->
+                    "- ${log.date}: ${log.systolic}/${log.diastolic} mmHg — ${log.hypertensionLevel}"
+                }
+                .ifEmpty { "No blood pressure history recorded." }
+
             withContext(Dispatchers.Main) {
                 generativeModel = GenerativeModel(
                     modelName = "gemini-2.5-flash-lite",
                     apiKey = BuildConfig.GEMINI_API_KEY,
                     systemInstruction = content {
                         text("""
-            You are a clinical dietitian and nutrition expert specializing in 
+            You are a clinical Large Language Model specializing in 
             hypertension management and personalized diet planning.
             
             HYPERTENSION GUIDELINES (AHA 2017):
@@ -58,6 +68,7 @@ class InsightViewModel(
             - Available Foods: $foodNames
             - BMI Level: $bmiLevel
             - Daily Calorie Goal: $bmiCalGoal kcal
+            - Blood Pressure History: $bpHistory
             
             RULES:
             - Only answer questions about diet, nutrition, and hypertension

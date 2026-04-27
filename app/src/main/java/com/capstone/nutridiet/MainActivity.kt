@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity() {
                 val foodDB = FoodDatabase.getDatabase(context)
                 val foodDao = foodDB.dao
                 val dailyLogDao = foodDB.dailyLogDao
-
+                val bpDao = foodDB.bpLogDao
                 val chatViewModel: InsightViewModel = viewModel(
-                    factory = InsightViewModelFactory(bmiDAO, foodDao)
+                    factory = InsightViewModelFactory(bmiDAO, foodDao, bpDao)
                 )
             ////////////////////////////////////////////////////////////////////////////
 
@@ -100,11 +100,13 @@ NOTE: TURN DASHBOARD INTO CHECKING LIST FOR FOOD ITEMS FIRST
 
 
     UPDATED///////////////////////////
+    >>>>>>>>>>>>>>>>>>>>>>>>>>>[IMPORTANT] Add RAG Pipeline<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
     9. ADD BMI SCREEN AND CALORIE SCREEN TO DASHBOARD
     10. Add sodium levels
     11. Add BMI Inch Height Converters
     12. change to non american length standards (lbs to kg, g, etc.)
-
+    13.
 
 ////
 Fetch the whole FoodData

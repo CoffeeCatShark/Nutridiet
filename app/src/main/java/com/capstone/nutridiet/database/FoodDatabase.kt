@@ -4,62 +4,82 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
         FoodData::class,
-        DailyLog::class,   // add this
-        FoodEntry::class,   // add this
-        DietPlan::class
+        DailyLog::class,
+        FoodEntry::class,
+        DietPlan::class,
+        BloodPressureLog::class
     ],
-    version = 4,           // bump version
+    version = 5,
     exportSchema = false
 )
 abstract class FoodDatabase : RoomDatabase() {
 
     abstract val dao: FoodDao
-    abstract val dailyLogDao: DailyLogDao  // add this
+    abstract val dailyLogDao: DailyLogDao
     abstract val dietPlanDao: DietPlanDao
+    abstract val bpLogDao: BloodPressureDao
 
     companion object {
         @Volatile
         private var INSTANCE: FoodDatabase? = null
 
-        // migration 2 → 3 (DailyLog and FoodEntry tables)
-        val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
-            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        // ✅ migration 2 → 3
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("""
-                CREATE TABLE IF NOT EXISTS `daily_log` (
-                    `logId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `userId` INTEGER NOT NULL,
-                    `date` TEXT NOT NULL
-                )
-            """)
+                    CREATE TABLE IF NOT EXISTS `daily_log` (
+                        `logId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `userId` INTEGER NOT NULL,
+                        `date` TEXT NOT NULL
+                    )
+                """)
                 database.execSQL("""
-                CREATE TABLE IF NOT EXISTS `food_entry` (
-                    `entryId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `logOwnerId` INTEGER NOT NULL,
-                    `foodId` INTEGER NOT NULL,
-                    `mealType` TEXT NOT NULL,
-                    `servingSize` REAL NOT NULL,
-                    FOREIGN KEY (`logOwnerId`) REFERENCES `daily_log`(`logId`) ON DELETE CASCADE
-                )
-            """)
+                    CREATE TABLE IF NOT EXISTS `food_entry` (
+                        `entryId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `logOwnerId` INTEGER NOT NULL,
+                        `foodId` INTEGER NOT NULL,
+                        `mealType` TEXT NOT NULL,
+                        `servingSize` REAL NOT NULL,
+                        FOREIGN KEY (`logOwnerId`) REFERENCES `daily_log`(`logId`) ON DELETE CASCADE
+                    )
+                """)
             }
         }
 
-        // migration 3 → 4 (DietPlan table)
-        val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
-            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        // ✅ migration 3 → 4
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("""
-                CREATE TABLE IF NOT EXISTS `diet_plan` (
-                    `planId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `bloodPressureReading` INTEGER NOT NULL,
-                    `hypertensionLevel` TEXT NOT NULL,
-                    `generatedPlan` TEXT NOT NULL,
-                    `generatedAt` TEXT NOT NULL
-                )
-            """)
+                    CREATE TABLE IF NOT EXISTS `diet_plan` (
+                        `planId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `bloodPressureReading` INTEGER NOT NULL,
+                        `hypertensionLevel` TEXT NOT NULL,
+                        `generatedPlan` TEXT NOT NULL,
+                        `generatedAt` TEXT NOT NULL
+                    )
+                """)
+            }
+        }
+
+        // ✅ migration 4 → 5 — now correctly outside MIGRATION_3_4
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `blood_pressure_log` (
+                        `logId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `userId` INTEGER NOT NULL,
+                        `systolic` INTEGER NOT NULL,
+                        `diastolic` INTEGER NOT NULL,
+                        `hypertensionLevel` TEXT NOT NULL,
+                        `date` TEXT NOT NULL
+                    )
+                """)
             }
         }
 
@@ -71,12 +91,15 @@ abstract class FoodDatabase : RoomDatabase() {
                     "nutridietFood_db"
                 )
                     .createFromAsset("initialDatabase/FoodData.db")
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)  // ✅ both migrations
+                    .addMigrations(
+                        MIGRATION_2_3,
+                        MIGRATION_3_4,
+                        MIGRATION_4_5  // ✅ added here
+                    )
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
-
 }

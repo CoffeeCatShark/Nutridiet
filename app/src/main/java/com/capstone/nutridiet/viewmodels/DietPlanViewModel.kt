@@ -1,5 +1,7 @@
 package com.capstone.nutridiet.viewmodels
 
+import com.capstone.nutridiet.database.BloodPressureDao
+import com.capstone.nutridiet.database.BloodPressureLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.BuildConfig
@@ -24,7 +26,8 @@ import java.time.LocalDate
 class DietPlanViewModel(
     private val dietPlanDao: DietPlanDao,
     private val foodDao: FoodDao,
-    private val userDAO: UserBMIDAO
+    private val userDAO: UserBMIDAO,
+    private val bpLogDao: BloodPressureDao
 ) : ViewModel() {
 
     // ✅ improved system instruction
@@ -33,7 +36,7 @@ class DietPlanViewModel(
         apiKey = BuildConfig.GEMINI_API_KEY,
         systemInstruction = content {
             text("""
-                You are a clinical dietitian specializing in hypertension management
+                You are a clinical Large Language Model specializing in hypertension management
                 and personalized diet planning based on the DASH diet.
                 
                 HYPERTENSION GUIDELINES (AHA 2017):
@@ -99,10 +102,25 @@ class DietPlanViewModel(
         val dia = _diastolic.value.toIntOrNull()
 
         if (sys == null || dia == null || sys <= 0 || dia <= 0) {
-            _errorMessage.value = "Please enter valid systolic and diastolic readings."
+            _errorMessage.value = "Please enter valid readings."
             return
         }
-        _bpResult.value = BloodPressureUtils.analyze(sys, dia)
+
+        val result = BloodPressureUtils.analyze(sys, dia)
+        _bpResult.value = result
+
+        // ✅ automatically save to history
+        viewModelScope.launch {
+            bpLogDao.insertLog(
+                BloodPressureLog(
+                    userId = 1,
+                    systolic = sys,
+                    diastolic = dia,
+                    hypertensionLevel = result.label,
+                    date = LocalDate.now().toString()
+                )
+            )
+        }
         _errorMessage.value = null
     }
 
@@ -111,6 +129,8 @@ class DietPlanViewModel(
             _errorMessage.value = "Please analyze your blood pressure first."
             return
         }
+
+
         viewModelScope.launch {
             _isGenerating.value = true
             _errorMessage.value = null
@@ -257,4 +277,12 @@ class DietPlanViewModel(
         }
         return "Failed after $maxRetries attempts."
     }
+
+    val bpHistory = bpLogDao.getRecentLogs(userId = 1, limit = 10)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
+
 }

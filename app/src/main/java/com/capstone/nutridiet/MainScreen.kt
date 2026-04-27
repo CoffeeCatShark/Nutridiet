@@ -70,8 +70,9 @@ fun MainScreen(chatViewModel: InsightViewModel,
     val userDao = bmiDB.dao
     val dailyLogDao = foodDB.dailyLogDao
     val dietPlanDao = foodDB.dietPlanDao
+    val bpLogDao = foodDB.bpLogDao  // ✅ add this
     val dietPlanVM: DietPlanViewModel = viewModel(
-        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, userDao)
+        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, userDao,bpLogDao)
     )
 
     val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
