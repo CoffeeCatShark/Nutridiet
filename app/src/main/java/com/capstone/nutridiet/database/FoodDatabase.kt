@@ -15,7 +15,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DietPlan::class,
         BloodPressureLog::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class FoodDatabase : RoomDatabase() {
@@ -83,6 +83,15 @@ abstract class FoodDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+            ALTER TABLE diet_plan ADD COLUMN planDays INTEGER NOT NULL DEFAULT 5
+        """)
+            }
+        }
+
+
         fun getDatabase(context: Context): FoodDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -94,7 +103,8 @@ abstract class FoodDatabase : RoomDatabase() {
                     .addMigrations(
                         MIGRATION_2_3,
                         MIGRATION_3_4,
-                        MIGRATION_4_5  // ✅ added here
+                        MIGRATION_4_5,
+                        MIGRATION_5_6// ✅ added here
                     )
                     .build()
                 INSTANCE = instance

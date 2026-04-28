@@ -19,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -129,21 +130,39 @@ class DietPlanViewModel(
             _errorMessage.value = "Please analyze your blood pressure first."
             return
         }
-
-
         viewModelScope.launch {
             _isGenerating.value = true
             _errorMessage.value = null
             try {
-                // ✅ fetch data from DB
+                // ✅ fetch ALL fresh data right before generating
                 val foodNames = foodDao.GetAllFoodNames().joinToString(", ")
-                val calorieGoal = userDAO.getBMICalorieGoal() ?: 2000
+                val freshCalorieGoal = userDAO.getBMICalorieGoal() ?: 2000
+                val freshHeight = userDAO.getBMIHeight() ?: 0
+                val freshWeight = userDAO.getBMIWeight() ?: 0
+                val freshAge = userDAO.getBMIAge() ?: 0
+                val freshIsMale = userDAO.getBMIGender() ?: true
+                val freshActivityLevel = userDAO.getBMILevel() ?: "MODERATE"
+                val freshBPHistory = bpLogDao.getRecentLogs(1, 5)
+                    .first()
+                    .joinToString("\n") { log ->
+                        "- ${log.date}: ${log.systolic}/${log.diastolic} mmHg — ${log.hypertensionLevel}"
+                    }
+                    .ifEmpty { "No blood pressure history recorded." }
 
-                // ✅ use buildPrompt() with all data
-                val prompt = buildPrompt(result, foodNames, calorieGoal)
+                val prompt = buildPrompt(
+                    result = result,
+                    foodNames = foodNames,
+                    calorieGoal = freshCalorieGoal,         // ✅ fresh
+                    height = freshHeight,                    // ✅ fresh
+                    weight = freshWeight,                    // ✅ fresh
+                    age = freshAge,                          // ✅ fresh
+                    isMale = freshIsMale,                    // ✅ fresh
+                    activityLevel = freshActivityLevel,      // ✅ fresh
+                    bpHistory = freshBPHistory               // ✅ fresh
+                )
+
                 val response = generateWithRetry(prompt)
 
-                // save to database
                 dietPlanDao.clearDietPlans()
                 dietPlanDao.saveDietPlan(
                     DietPlan(
@@ -165,47 +184,87 @@ class DietPlanViewModel(
     private fun buildPrompt(
         result: BloodPressureResult,
         foodNames: String,
-        calorieGoal: Int
+        calorieGoal: Int,
+        height: Int,        // ✅ added
+        weight: Int,        // ✅ added
+        age: Int,           // ✅ added
+        isMale: Boolean,    // ✅ added
+        activityLevel: String,  // ✅ added
+        bpHistory: String       // ✅ added
     ): String {
+        val sodiumLimit = when (result.level) {
+            HypertensionLevel.NORMAL   -> 2300
+            HypertensionLevel.ELEVATED -> 2300
+            HypertensionLevel.STAGE_1  -> 1500
+            HypertensionLevel.STAGE_2  -> 1500
+            HypertensionLevel.CRISIS   -> 1000
+        }
+
         return """
-            PATIENT PROFILE:
-            - Blood Pressure: ${result.systolic} / ${result.diastolic} mmHg
-            - Hypertension Level: ${result.label}
-            - Description: ${result.description}
-            - Daily Calorie Goal: $calorieGoal kcal
-            
-            AVAILABLE FOODS FROM DATABASE:
-            $foodNames
-            
-            DIETARY CONSTRAINTS BASED ON HYPERTENSION LEVEL:
-            ${getDietaryConstraints(result.level)}
-            
-            TASK:
-            Generate a structured one-day DASH diet plan using ONLY the foods 
-            listed above that are appropriate for the patient's hypertension level.
-            Try to keep total calories close to the patient's daily calorie goal.
-            
-            FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
-            
-            🌅 Breakfast:
-            - [food name] — [brief reason why it's suitable]
-            
-            🍱 Lunch:
-            - [food name] — [brief reason why it's suitable]
-            
-            🍽️ Dinner:
-            - [food name] — [brief reason why it's suitable]
-            
-            🍎 Snacks:
-            - [food name] — [brief reason why it's suitable]
-            
-            ⚠️ Foods to Avoid from the list:
-            - [food name] — [brief reason why to avoid]
-            
-            📋 Summary:
-            [2-3 sentences explaining why this plan suits the patient's 
-            hypertension level, citing DASH diet or AHA guidelines]
-        """.trimIndent()
+        PATIENT PROFILE:
+        - Blood Pressure: ${result.systolic} / ${result.diastolic} mmHg
+        - Hypertension Level: ${result.label}
+        - Description: ${result.description}
+        - Age: $age
+        - Gender: ${if (isMale) "Male" else "Female"}
+        - Height: $height inches
+        - Weight: $weight lbs
+        - Activity Level: $activityLevel
+        - Daily Calorie Goal: $calorieGoal kcal
+        - Daily Sodium Limit: $sodiumLimit mg
+
+        BLOOD PRESSURE HISTORY:
+        $bpHistory
+
+        AVAILABLE FOODS FROM DATABASE:
+        $foodNames
+
+        DIETARY CONSTRAINTS BASED ON HYPERTENSION LEVEL:
+        ${getDietaryConstraints(result.level)}
+
+        TASK:
+        Generate a structured 7-DAY DASH diet plan using ONLY
+        the foods listed above appropriate for ${result.label}.
+        Keep total calories close to $calorieGoal kcal per day.
+        Keep total sodium under $sodiumLimit mg per day.
+        Vary meals each day to avoid repetition.
+
+        FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+
+        ═══════════════════════════════
+        📅 DAY 1
+        ═══════════════════════════════
+
+        🌅 Breakfast:
+        - [food name] — [brief reason]
+
+        🍱 Lunch:
+        - [food name] — [brief reason]
+
+        🍽️ Dinner:
+        - [food name] — [brief reason]
+
+        🍎 Snacks:
+        - [food name] — [brief reason]
+
+        📊 Day 1 Summary:
+        - Estimated Calories: [X] / $calorieGoal kcal
+        - Estimated Sodium: [X] / $sodiumLimit mg
+
+        [REPEAT FOR DAY 2 THROUGH DAY 7]
+
+        ⚠️ Foods to Avoid:
+        - [food name] — [reason]
+
+        📋 Clinical Summary:
+        [2-3 sentences citing AHA/DASH guidelines]
+
+        ⚕️ Medical Disclaimer:
+        This diet plan is for informational purposes only.
+        Always consult a licensed physician or registered
+        dietitian before making dietary changes.
+        ═══════════════════════════════
+    """.trimIndent()
     }
 
     private fun getDietaryConstraints(level: HypertensionLevel): String {
@@ -264,13 +323,13 @@ class DietPlanViewModel(
             } catch (e: ServerException) {
                 attempt++
                 if (attempt >= maxRetries) throw e
-                delay(2000L * attempt)
+                delay(3000L * attempt)
             } catch (e: kotlinx.serialization.MissingFieldException) {
                 attempt++
                 if (attempt >= maxRetries) {
                     return "Service temporarily unavailable. Please try again."
                 }
-                delay(2000L * attempt)
+                delay(3000L * attempt)
             } catch (e: Exception) {
                 throw e
             }

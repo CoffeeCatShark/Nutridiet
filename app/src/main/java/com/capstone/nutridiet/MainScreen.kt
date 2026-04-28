@@ -1,31 +1,24 @@
 package com.capstone.nutridiet
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.capstone.nutridiet.navigation.Screen
-import androidx.navigation.compose.composable
 import com.capstone.nutridiet.database.BMIDatabase
 import com.capstone.nutridiet.database.FoodDatabase
-import com.capstone.nutridiet.database.UserBMIDAO
-import com.capstone.nutridiet.database.UserBMIData
+import com.capstone.nutridiet.navigation.Screen
 import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
 import com.capstone.nutridiet.viewmodels.CalorieViewModel
@@ -37,53 +30,42 @@ import com.capstone.nutridiet.viewmodels.DietPlanViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
+import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import com.example.yourapp.screens.BMIScreen
 import com.example.yourapp.screens.CaloriesScreen
-import com.example.yourapp.screens.InsightsScreen
 import com.example.yourapp.screens.DailyDietScreen
 import com.example.yourapp.screens.DietPlanScreen
 import com.example.yourapp.screens.FoodPickerScreen
+import com.example.yourapp.screens.InsightsScreen
 import com.example.yourapp.screens.OnboardingScreen
 
-data class NavigationItem(
-    val screen: Screen,
-    val icon: ImageVector,
-    val label: String
-)
-
-val navItemList = listOf(
-    NavigationItem(Screen.Dashboard, Icons.Default.Home,"Dashboard")
-)
-
 @Composable
-fun MainScreen(chatViewModel: InsightViewModel,
-               isFirstLaunch: Boolean,
-               onFirstLaunchComplete: () -> Unit
+fun MainScreen(
+    chatViewModel: InsightViewModel,
+    isFirstLaunch: Boolean,
+    onFirstLaunchComplete: () -> Unit
 ) {
-
-
     val context = LocalContext.current
     val bmiDB = BMIDatabase.getDatabase(context)
     val foodDB = FoodDatabase.getDatabase(context)
     val bmiDao = bmiDB.dao
     val foodDao = foodDB.dao
-    val userDao = bmiDB.dao
     val dailyLogDao = foodDB.dailyLogDao
     val dietPlanDao = foodDB.dietPlanDao
-    val bpLogDao = foodDB.bpLogDao  // ✅ add this
-    val dietPlanVM: DietPlanViewModel = viewModel(
-        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, userDao,bpLogDao)
-    )
+    val bpLogDao = foodDB.bpLogDao  // ✅ instance from foodDB
 
     val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
     val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDao))
     val foodVM: FoodViewModel = viewModel(factory = FoodViewModelFactory(foodDao))
-    val dailyLogVM: DailyLogViewModel = viewModel(factory = DailyLogViewModelFactory(
-        dailyLogDao,
-        foodDao
+    val dailyLogVM: DailyLogViewModel = viewModel(
+        factory = DailyLogViewModelFactory(dailyLogDao, foodDao)
     )
+    val dietPlanVM: DietPlanViewModel = viewModel(
+        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, bmiDao, bpLogDao)
     )
-
+    val insightVM: InsightViewModel = viewModel(
+        factory = InsightViewModelFactory(bmiDao, foodDao, bpLogDao)  // ✅ bpLogDao instance
+    )
 
     val navController = rememberNavController()
 
@@ -99,24 +81,12 @@ fun MainScreen(chatViewModel: InsightViewModel,
                     label = { Text("Dashboard") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Dashboard") }
                 )
-                /*NavigationBarItem(
-                    selected = currentRoute == Screen.BMI.route,
-                    onClick = { navController.navigate(Screen.BMI.route) },
-                    label = { Text("BMI") },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "BMI") }
-                )*/
                 NavigationBarItem(
                     selected = currentRoute == Screen.Food.route,
                     onClick = { navController.navigate(Screen.Food.route) },
                     label = { Text("Food") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Food") }
                 )
-                /*NavigationBarItem(
-                    selected = currentRoute == Screen.Calorie.route,
-                    onClick = { navController.navigate(Screen.Calorie.route) },
-                    label = { Text("Calories") },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Calories") }
-                )*/
                 NavigationBarItem(
                     selected = currentRoute == Screen.Insights.route,
                     onClick = { navController.navigate(Screen.Insights.route) },
@@ -129,19 +99,15 @@ fun MainScreen(chatViewModel: InsightViewModel,
                     label = { Text("Diet Plan") },
                     icon = { Icon(Icons.Default.Home, contentDescription = "Diet Plan") }
                 )
-
-
-
             }
         }
-    )
-    { innerPadding ->
+    ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = if (isFirstLaunch) Screen.Onboarding.route else Screen.Dashboard.route  // ✅ go directly
-         ,modifier = Modifier.padding(innerPadding)
+            startDestination = if (isFirstLaunch) Screen.Onboarding.route
+            else Screen.Dashboard.route,
+            modifier = Modifier.padding(innerPadding)
         ) {
-
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(
                     bmiVM = bmiVM,
@@ -153,27 +119,33 @@ fun MainScreen(chatViewModel: InsightViewModel,
                     }
                 )
             }
-
             composable(Screen.Dashboard.route) {
                 Dashboard(
                     foodVM = foodVM,
                     dailyLogVM = dailyLogVM,
                     bmiVM = bmiVM,
                     calorieVM = calorieVM,
-                    navController = navController)
+                    navController = navController
+                )
             }
             composable(Screen.BMI.route) {
                 BMIScreen(bmiVM)
             }
             composable(Screen.Food.route) {
-                DailyDietScreen(dailyLogVM,
-                    onAddFood = { navController.navigate(Screen.FoodPicker.route) })
+                DailyDietScreen(
+                    dailyLogVM,
+                    onAddFood = { navController.navigate(Screen.FoodPicker.route) }
+                )
             }
             composable(Screen.Calorie.route) {
-                CaloriesScreen(calorieVM)
+                CaloriesScreen(
+                    viewModel = calorieVM,
+                    insightVM = insightVM,   // ✅ fixed variable name
+                    dietPlanVM = dietPlanVM
+                )
             }
             composable(Screen.Insights.route) {
-                InsightsScreen(chatViewModel)
+                InsightsScreen(insightVM)    // ✅ use insightVM instead of chatViewModel
             }
             composable(Screen.FoodData.route) {
                 FoodDataScreen(foodVM)
@@ -182,7 +154,7 @@ fun MainScreen(chatViewModel: InsightViewModel,
                 FoodPickerScreen(
                     foodVM = foodVM,
                     dailyLogVM = dailyLogVM,
-                    onFoodAdded = { navController.popBackStack() }, // ✅ go back after adding
+                    onFoodAdded = { navController.popBackStack() },
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -190,7 +162,7 @@ fun MainScreen(chatViewModel: InsightViewModel,
                 DietPlanScreen(viewModel = dietPlanVM)
             }
             composable(Screen.BPHistory.route) {
-                BPHistoryScreen(viewModel = dietPlanVM)  // ✅ pass dietPlanVM
+                BPHistoryScreen(viewModel = dietPlanVM)
             }
         }
     }

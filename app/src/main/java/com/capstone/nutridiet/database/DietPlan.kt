@@ -9,5 +9,6 @@ data class DietPlan(
     val bloodPressureReading: Int,
     val hypertensionLevel: String,
     val generatedPlan: String,  // Gemini's response stored as text
-    val generatedAt: String     // date string
+    val generatedAt: String,     // date string
+    val planDays: Int = 7
 )

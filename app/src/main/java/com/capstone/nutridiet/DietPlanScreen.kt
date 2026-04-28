@@ -1,5 +1,6 @@
 package com.example.yourapp.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +25,32 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
     val isGenerating by viewModel.isGenerating.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val savedDietPlan by viewModel.savedDietPlan.collectAsState()
+
+    fun extractDayContent(fullPlan: String, day: Int): String {
+        val startMarker = "DAY $day"
+        val endMarker = if (day < 5) "DAY ${day + 1}" else "Foods to Avoid"
+
+        val startIndex = fullPlan.indexOf(startMarker)
+        val endIndex = fullPlan.indexOf(endMarker)
+
+        return if (startIndex != -1 && endIndex != -1) {
+            fullPlan.substring(startIndex, endIndex).trim()
+        } else if (startIndex != -1) {
+            fullPlan.substring(startIndex).trim()
+        } else {
+            "Content not available"
+        }
+    }
+
+    // extracts clinical summary from the full plan
+    fun extractSummary(fullPlan: String): String {
+        val marker = "📋 Clinical Summary:"
+        val startIndex = fullPlan.indexOf(marker)
+        return if (startIndex != -1) {
+            fullPlan.substring(startIndex).trim()
+        } else ""
+    }
+
 
     Column(
         modifier = Modifier
@@ -137,9 +164,9 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generating...")
+                            Text("Generating 7-Day Plan...")  // ✅ updated text
                         } else {
-                            Text("Generate Diet Plan")
+                            Text("Generate 7-Day Diet Plan")  // ✅ updated text
                         }
                     }
                 }
@@ -150,7 +177,7 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
         savedDietPlan?.let { plan ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Your Diet Plan",
+                text = "Your 7-Day Diet Plan",  // ✅ updated
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -173,10 +200,54 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = plan.generatedPlan,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+
+                    // ✅ expandable plan — show day by day
+                    var expandedDay by remember { mutableStateOf<Int?>(1) }
+
+                    (1..7).forEach { day ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    expandedDay = if (expandedDay == day) null else day
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (expandedDay == day)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "📅 Day $day",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (expandedDay == day) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // extract day content from full plan
+                                    val dayContent = extractDayContent(plan.generatedPlan, day)
+                                    Text(
+                                        text = dayContent,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // show clinical summary always
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val summary = extractSummary(plan.generatedPlan)
+                    if (summary.isNotEmpty()) {
+                        Text(
+                            text = summary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
