@@ -28,7 +28,7 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
 
     fun extractDayContent(fullPlan: String, day: Int): String {
         val startMarker = "DAY $day"
-        val endMarker = if (day < 5) "DAY ${day + 1}" else "Foods to Avoid"
+        val endMarker = if (day < 7) "DAY ${day + 1}" else "Foods to Avoid"
 
         val startIndex = fullPlan.indexOf(startMarker)
         val endIndex = fullPlan.indexOf(endMarker)

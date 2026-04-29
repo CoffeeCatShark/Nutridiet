@@ -142,7 +142,7 @@ class DietPlanViewModel(
                 val freshAge = userDAO.getBMIAge() ?: 0
                 val freshIsMale = userDAO.getBMIGender() ?: true
                 val freshActivityLevel = userDAO.getBMILevel() ?: "MODERATE"
-                val freshBPHistory = bpLogDao.getRecentLogs(1, 5)
+                val freshBPHistory = bpLogDao.getRecentLogs(1, 7)
                     .first()
                     .joinToString("\n") { log ->
                         "- ${log.date}: ${log.systolic}/${log.diastolic} mmHg — ${log.hypertensionLevel}"
@@ -250,7 +250,7 @@ class DietPlanViewModel(
         📊 Day 1 Summary:
         - Estimated Calories: [X] / $calorieGoal kcal
         - Estimated Sodium: [X] / $sodiumLimit mg
-
+        
         [REPEAT FOR DAY 2 THROUGH DAY 7]
 
         ⚠️ Foods to Avoid:
