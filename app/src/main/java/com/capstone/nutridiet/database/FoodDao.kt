@@ -35,4 +35,7 @@ interface FoodDao {
     """)
     suspend fun UpdateFoodScoring(foodScore: Double, foodId: Int)
 
+    @Query("SELECT * FROM FoodData ORDER BY foodScore DESC")
+    suspend fun GetAllFoodsForRAG(): List<FoodData>
+
 }

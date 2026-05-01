@@ -1,17 +1,24 @@
 package com.capstone.nutridiet.viewmodels
 
-import com.capstone.nutridiet.database.BloodPressureDao
-import com.capstone.nutridiet.database.BloodPressureLog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.BuildConfig
+import com.capstone.nutridiet.database.BloodPressureDao
+import com.capstone.nutridiet.database.BloodPressureLog
 import com.capstone.nutridiet.database.DietPlan
 import com.capstone.nutridiet.database.DietPlanDao
 import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.UserBMIDAO
+import com.capstone.nutridiet.network.BPHistoryItemRequest
+import com.capstone.nutridiet.network.DietPlanRequest
+import com.capstone.nutridiet.network.FoodItemRequest
+import com.capstone.nutridiet.network.RetrofitClient
+import com.capstone.nutridiet.network.UserContextRequest
+import com.capstone.nutridiet.utils.BloodPressureAnalyzer
 import com.capstone.nutridiet.utils.BloodPressureResult
-import com.capstone.nutridiet.utils.BloodPressureUtils
+import com.capstone.nutridiet.utils.DietaryGuidelinesHelper
 import com.capstone.nutridiet.utils.HypertensionLevel
+import com.capstone.nutridiet.utils.ValidationResult
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.ServerException
 import com.google.ai.client.generativeai.type.content
@@ -31,39 +38,23 @@ class DietPlanViewModel(
     private val bpLogDao: BloodPressureDao
 ) : ViewModel() {
 
-    // ✅ improved system instruction
+    // ─── GEMINI — only used for generation ────────────
     private val generativeModel = GenerativeModel(
         modelName = "gemini-2.5-flash-lite",
         apiKey = BuildConfig.GEMINI_API_KEY,
         systemInstruction = content {
             text("""
-                You are a clinical Large Language Model specializing in hypertension management
-                and personalized diet planning based on the DASH diet.
-                
-                HYPERTENSION GUIDELINES (AHA 2017):
-                - Normal:   Systolic < 120  AND Diastolic < 80
-                - Elevated: Systolic 120-129 AND Diastolic < 80
-                - Stage 1:  Systolic 130-139 OR  Diastolic 80-89
-                - Stage 2:  Systolic ≥ 140  OR  Diastolic ≥ 90
-                - Crisis:   Systolic ≥ 180  OR  Diastolic ≥ 120
-                
-                DASH DIET GUIDELINES:
-                - Sodium:        limit to 1500-2300mg/day
-                - Saturated Fat: limit to less than 6% of total calories
-                - Prioritize whole grains, fruits, vegetables, lean proteins
-                - Avoid processed foods, high sodium foods, excessive red meat
-                
-                RULES:
-                - Only generate diet plans using foods explicitly provided
-                - Always recommend consulting a doctor for medical decisions
-                - Keep responses structured and concise
-                - Always cite AHA or DASH diet guidelines in your summary
-                - Flag crisis level with emergency medical disclaimer
+                You are a clinical dietitian specializing in 
+                hypertension management using the DASH diet.
+                Generate diet plans using ONLY the foods provided.
+                Always cite AHA or DASH diet guidelines.
+                Always include the medical disclaimer.
+                Never recommend foods not in the provided list.
             """.trimIndent())
         }
     )
 
-    // Blood pressure state
+    // ─── UI STATE ─────────────────────────────────────
     private val _systolic = MutableStateFlow("")
     val systolic: StateFlow<String> = _systolic
 
@@ -73,105 +64,157 @@ class DietPlanViewModel(
     private val _bpResult = MutableStateFlow<BloodPressureResult?>(null)
     val bpResult: StateFlow<BloodPressureResult?> = _bpResult
 
-    // Diet plan generation state
     private val _isGenerating = MutableStateFlow(false)
     val isGenerating: StateFlow<Boolean> = _isGenerating
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    // Latest saved diet plan from DB
+    private val _citations = MutableStateFlow<List<String>>(emptyList())
+    val citations: StateFlow<List<String>> = _citations
     val savedDietPlan = dietPlanDao.getLatestDietPlan()
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            null
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val bpHistory = bpLogDao.getRecentLogs(userId = 1, limit = 10)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ─── INPUT HANDLERS ───────────────────────────────
     fun onSystolicChange(value: String) {
         _systolic.value = value
         _bpResult.value = null
+        _errorMessage.value = null
     }
 
     fun onDiastolicChange(value: String) {
         _diastolic.value = value
         _bpResult.value = null
-    }
-
-    fun analyzeBloodPressure() {
-        val sys = _systolic.value.toIntOrNull()
-        val dia = _diastolic.value.toIntOrNull()
-
-        if (sys == null || dia == null || sys <= 0 || dia <= 0) {
-            _errorMessage.value = "Please enter valid readings."
-            return
-        }
-
-        val result = BloodPressureUtils.analyze(sys, dia)
-        _bpResult.value = result
-
-        // ✅ automatically save to history
-        viewModelScope.launch {
-            bpLogDao.insertLog(
-                BloodPressureLog(
-                    userId = 1,
-                    systolic = sys,
-                    diastolic = dia,
-                    hypertensionLevel = result.label,
-                    date = LocalDate.now().toString()
-                )
-            )
-        }
         _errorMessage.value = null
     }
 
+    // ─── BLOOD PRESSURE ANALYSIS ──────────────────────
+    // ✅ delegates to BloodPressureAnalyzer — no logic here
+    fun analyzeBloodPressure() {
+        val validation = BloodPressureAnalyzer.validateInput(
+            _systolic.value,
+            _diastolic.value
+        )
+
+        when (validation) {
+            is ValidationResult.Error -> {
+                _errorMessage.value = validation.message
+            }
+            is ValidationResult.Valid -> {
+                val result = BloodPressureAnalyzer.analyze(
+                    validation.systolic,
+                    validation.diastolic
+                )
+                _bpResult.value = result
+                _errorMessage.value = null
+
+                // save to history
+                viewModelScope.launch {
+                    bpLogDao.insertLog(
+                        BloodPressureLog(
+                            userId = 1,
+                            systolic = validation.systolic,
+                            diastolic = validation.diastolic,
+                            hypertensionLevel = result.label,
+                            date = LocalDate.now().toString()
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    // ─── DIET PLAN GENERATION ─────────────────────────
+    // ✅ ViewModel only fetches data and calls AI
+    // ✅ all logic delegated to helper classes
     fun generateDietPlan() {
         val result = _bpResult.value ?: run {
             _errorMessage.value = "Please analyze your blood pressure first."
             return
         }
+
+        if (result.isEmergency) {
+            _errorMessage.value = "⚠️ EMERGENCY: Please seek immediate medical care."
+            return
+        }
+
         viewModelScope.launch {
             _isGenerating.value = true
             _errorMessage.value = null
             try {
-                // ✅ fetch ALL fresh data right before generating
-                val foodNames = foodDao.GetAllFoodNames().joinToString(", ")
-                val freshCalorieGoal = userDAO.getBMICalorieGoal() ?: 2000
-                val freshHeight = userDAO.getBMIHeight() ?: 0
-                val freshWeight = userDAO.getBMIWeight() ?: 0
-                val freshAge = userDAO.getBMIAge() ?: 0
-                val freshIsMale = userDAO.getBMIGender() ?: true
-                val freshActivityLevel = userDAO.getBMILevel() ?: "MODERATE"
-                val freshBPHistory = bpLogDao.getRecentLogs(1, 7)
-                    .first()
-                    .joinToString("\n") { log ->
-                        "- ${log.date}: ${log.systolic}/${log.diastolic} mmHg — ${log.hypertensionLevel}"
-                    }
-                    .ifEmpty { "No blood pressure history recorded." }
+                // fetch fresh data from DB
+                val allFoods = foodDao.GetAllFoodsForRAG()
+                val calorieGoal = userDAO.getBMICalorieGoal() ?: 2000
+                val height = userDAO.getBMIHeight() ?: 0
+                val weight = userDAO.getBMIWeight() ?: 0
+                val age = userDAO.getBMIAge() ?: 0
+                val isMale = userDAO.getBMIGender() ?: true
+                val activityLevel = userDAO.getBMILevel() ?: "MODERATE"
+                val recentBP = bpLogDao.getRecentLogs(1, 5).first()
 
-                val prompt = buildPrompt(
-                    result = result,
-                    foodNames = foodNames,
-                    calorieGoal = freshCalorieGoal,         // ✅ fresh
-                    height = freshHeight,                    // ✅ fresh
-                    weight = freshWeight,                    // ✅ fresh
-                    age = freshAge,                          // ✅ fresh
-                    isMale = freshIsMale,                    // ✅ fresh
-                    activityLevel = freshActivityLevel,      // ✅ fresh
-                    bpHistory = freshBPHistory               // ✅ fresh
+                // ✅ call Firebase RAG /generateDietPlan endpoint
+                val response = RetrofitClient.dietPlanApi.generateDietPlan(
+                    DietPlanRequest(
+                        systolic = result.systolic,
+                        diastolic = result.diastolic,
+                        hypertensionLevel = result.label,
+                        userContext = UserContextRequest(
+                            userId = 1,
+                            age = age,
+                            isMale = isMale,
+                            height = height,
+                            weight = weight,
+                            calorieGoal = calorieGoal,
+                            activityLevel = activityLevel,
+                            hypertensionLevel = result.label,
+                            consumedCalories = 0.0,
+                            consumedSodium = 0.0,
+                            consumedProtein = 0.0,
+                            consumedSatFat = 0.0,
+                            sodiumLimit = result.sodiumLimit,
+                            todayFoodCount = 0,
+                            weeklyAvgCalories = 0.0,
+                            weeklyAvgSodium = 0.0,
+                            bpHistory = recentBP.map {
+                                BPHistoryItemRequest(
+                                    systolic = it.systolic,
+                                    diastolic = it.diastolic,
+                                    hypertensionLevel = it.hypertensionLevel,
+                                    date = it.date
+                                )
+                            }
+                        ),
+                        foods = allFoods.map {
+                            FoodItemRequest(
+                                id = it.foodID ?: 0,
+                                name = it.foodName,
+                                calories = it.foodCalories,
+                                sodium = it.foodSodium,
+                                protein = it.foodProtein,
+                                satFat = it.foodSatFat,
+                                score = it.foodScore
+                            )
+                        }
+                    )
                 )
 
-                val response = generateWithRetry(prompt)
-
+                // save to Room DB
                 dietPlanDao.clearDietPlans()
                 dietPlanDao.saveDietPlan(
                     DietPlan(
                         bloodPressureReading = result.systolic,
                         hypertensionLevel = result.label,
-                        generatedPlan = response,
+                        generatedPlan = response.plan,
                         generatedAt = LocalDate.now().toString()
                     )
                 )
+
+                // save citations
+                _citations.value = response.citations
+
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to generate diet plan. Please try again."
             } finally {
@@ -180,141 +223,97 @@ class DietPlanViewModel(
         }
     }
 
-    // ✅ updated buildPrompt with calorie goal
+    // ─── PROMPT BUILDER ───────────────────────────────
+    // ✅ uses DietaryGuidelinesHelper — no hardcoded constraints
     private fun buildPrompt(
         result: BloodPressureResult,
         foodNames: String,
         calorieGoal: Int,
-        height: Int,        // ✅ added
-        weight: Int,        // ✅ added
-        age: Int,           // ✅ added
-        isMale: Boolean,    // ✅ added
-        activityLevel: String,  // ✅ added
-        bpHistory: String       // ✅ added
+        height: Int,
+        weight: Int,
+        age: Int,
+        isMale: Boolean,
+        activityLevel: String,
+        bpHistory: String
     ): String {
-        val sodiumLimit = when (result.level) {
-            HypertensionLevel.NORMAL   -> 2300
-            HypertensionLevel.ELEVATED -> 2300
-            HypertensionLevel.STAGE_1  -> 1500
-            HypertensionLevel.STAGE_2  -> 1500
-            HypertensionLevel.CRISIS   -> 1000
-        }
-
         return """
-        PATIENT PROFILE:
-        - Blood Pressure: ${result.systolic} / ${result.diastolic} mmHg
-        - Hypertension Level: ${result.label}
-        - Description: ${result.description}
-        - Age: $age
-        - Gender: ${if (isMale) "Male" else "Female"}
-        - Height: $height inches
-        - Weight: $weight lbs
-        - Activity Level: $activityLevel
-        - Daily Calorie Goal: $calorieGoal kcal
-        - Daily Sodium Limit: $sodiumLimit mg
+            PATIENT PROFILE:
+            - Blood Pressure: ${result.systolic}/${result.diastolic} mmHg
+            - Hypertension Level: ${result.label}
+            - Sodium Limit: ${result.sodiumLimit} mg/day
+            - Age: $age | Gender: ${if (isMale) "Male" else "Female"}
+            - Height: $height in | Weight: $weight lbs
+            - Activity Level: $activityLevel
+            - Daily Calorie Goal: $calorieGoal kcal
 
-        BLOOD PRESSURE HISTORY:
-        $bpHistory
+            BLOOD PRESSURE HISTORY:
+            $bpHistory
 
-        AVAILABLE FOODS FROM DATABASE:
-        $foodNames
+            AVAILABLE FOODS FROM DATABASE:
+            $foodNames
 
-        DIETARY CONSTRAINTS BASED ON HYPERTENSION LEVEL:
-        ${getDietaryConstraints(result.level)}
+            DIETARY CONSTRAINTS:
+            ${DietaryGuidelinesHelper.getDietaryConstraints(result.level)}
 
-        TASK:
-        Generate a structured 7-DAY DASH diet plan using ONLY
-        the foods listed above appropriate for ${result.label}.
-        Keep total calories close to $calorieGoal kcal per day.
-        Keep total sodium under $sodiumLimit mg per day.
-        Vary meals each day to avoid repetition.
+            FOODS TO PRIORITIZE:
+            ${DietaryGuidelinesHelper.getFoodPriorities(result.level)}
 
-        FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
+            FOODS TO AVOID:
+            ${DietaryGuidelinesHelper.getFoodAvoidances(result.level)}
 
-        ═══════════════════════════════
-        📅 DAY 1
-        ═══════════════════════════════
+            SODIUM LIMIT SOURCE:
+            ${DietaryGuidelinesHelper.getSodiumLimitText(result.level)}
 
-        🌅 Breakfast:
-        - [food name] — [brief reason]
+            TASK:
+            Generate a structured 7-DAY DASH diet plan using ONLY
+            the foods listed above appropriate for ${result.label}.
+            Keep total calories close to $calorieGoal kcal per day.
+            Keep total sodium under ${result.sodiumLimit} mg per day.
+            Vary meals each day to avoid repetition.
 
-        🍱 Lunch:
-        - [food name] — [brief reason]
+            FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 
-        🍽️ Dinner:
-        - [food name] — [brief reason]
+            ═══════════════════════════════
+            📅 DAY 1
+            ═══════════════════════════════
 
-        🍎 Snacks:
-        - [food name] — [brief reason]
+            🌅 Breakfast:
+            - [food name] — [brief reason]
 
-        📊 Day 1 Summary:
-        - Estimated Calories: [X] / $calorieGoal kcal
-        - Estimated Sodium: [X] / $sodiumLimit mg
-        
-        [REPEAT FOR DAY 2 THROUGH DAY 7]
+            🍱 Lunch:
+            - [food name] — [brief reason]
 
-        ⚠️ Foods to Avoid:
-        - [food name] — [reason]
+            🍽️ Dinner:
+            - [food name] — [brief reason]
 
-        📋 Clinical Summary:
-        [2-3 sentences citing AHA/DASH guidelines]
+            🍎 Snacks:
+            - [food name] — [brief reason]
 
-        ⚕️ Medical Disclaimer:
-        This diet plan is for informational purposes only.
-        Always consult a licensed physician or registered
-        dietitian before making dietary changes.
-        ═══════════════════════════════
-    """.trimIndent()
+            📊 Day 1 Summary:
+            - Estimated Calories: [X] / $calorieGoal kcal
+            - Estimated Sodium: [X] / ${result.sodiumLimit} mg
+
+            [REPEAT FORMAT FOR DAY 2 THROUGH DAY 7]
+
+            ⚠️ Foods to Avoid:
+            - [food name] — [reason based on sodium/sat fat content]
+
+            📋 Clinical Summary:
+            [2-3 sentences citing AHA 2017, DASH diet, or WHO guidelines]
+
+            ⚕️ Medical Disclaimer:
+            This diet plan is for informational purposes only.
+            Always consult a licensed physician or registered
+            dietitian before making dietary changes.
+            ═══════════════════════════════
+        """.trimIndent()
     }
 
-    private fun getDietaryConstraints(level: HypertensionLevel): String {
-        return when (level) {
-            HypertensionLevel.NORMAL -> """
-                - Maintain a balanced diet
-                - Sodium limit: under 2300mg/day
-                - Focus on whole foods and lean proteins
-                - Maintain healthy weight
-            """.trimIndent()
-
-            HypertensionLevel.ELEVATED -> """
-                - Begin DASH diet principles
-                - Sodium limit: under 2300mg/day
-                - Reduce processed and high-sodium foods
-                - Increase fruits, vegetables, and whole grains
-                - Reduce saturated fat intake
-            """.trimIndent()
-
-            HypertensionLevel.STAGE_1 -> """
-                - Strict DASH diet required
-                - Sodium limit: under 1500mg/day
-                - Strictly avoid high sodium foods
-                - Prioritize potassium-rich foods
-                - Limit saturated fat to under 6% of calories
-                - Avoid red meat and processed foods
-            """.trimIndent()
-
-            HypertensionLevel.STAGE_2 -> """
-                - Strict DASH diet with medical supervision
-                - Sodium limit: under 1500mg/day
-                - Eliminate all high sodium foods
-                - Maximize potassium, magnesium, calcium intake
-                - No saturated fat from the food list
-                - Only lean proteins allowed
-                - No processed or fried foods
-            """.trimIndent()
-
-            HypertensionLevel.CRISIS -> """
-                - EMERGENCY: Recommend immediate medical attention
-                - Strictest sodium restriction: under 1000mg/day
-                - Only very low sodium foods
-                - No saturated fat whatsoever
-                - Only the healthiest foods from the list
-                - Include disclaimer to seek emergency care immediately
-            """.trimIndent()
-        }
-    }
-
-    private suspend fun generateWithRetry(prompt: String, maxRetries: Int = 3): String {
+    // ─── GEMINI RETRY ─────────────────────────────────
+    private suspend fun generateWithRetry(
+        prompt: String,
+        maxRetries: Int = 3
+    ): String {
         var attempt = 0
         while (attempt < maxRetries) {
             try {
@@ -336,12 +335,4 @@ class DietPlanViewModel(
         }
         return "Failed after $maxRetries attempts."
     }
-
-    val bpHistory = bpLogDao.getRecentLogs(userId = 1, limit = 10)
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            emptyList()
-        )
-
 }

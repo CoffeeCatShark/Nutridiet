@@ -7,6 +7,11 @@ import com.capstone.nutridiet.BuildConfig
 import com.capstone.nutridiet.database.BloodPressureDao
 import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.UserBMIDAO
+import com.capstone.nutridiet.network.BPHistoryItemRequest
+import com.capstone.nutridiet.network.FoodItemRequest
+import com.capstone.nutridiet.network.QueryRequest
+import com.capstone.nutridiet.network.RetrofitClient
+import com.capstone.nutridiet.network.UserContextRequest
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.ServerException
 import com.google.ai.client.generativeai.type.content
@@ -107,27 +112,95 @@ class InsightViewModel(
 
     fun sendMessage(userInput: String) {
         viewModelScope.launch {
-            // ✅ guard if model not initialized yet
-            if (chat == null) {
-                messageList.add(MessageModel("Still loading, please wait a moment.", "model"))
-                return@launch
-            }
             try {
                 messageList.add(MessageModel(userInput, "user"))
                 messageList.add(MessageModel("Typing. . .", "model"))
-                val response = chat!!.sendMessage(userInput)
-                messageList.removeAt(messageList.lastIndex)
 
-                val reply = response.text
-                withContext(Dispatchers.Main) {
-                    messageList.add(MessageModel(reply.toString(), "model"))
+                // fetch fresh data from DB
+                val freshCalorieGoal = withContext(Dispatchers.IO) {
+                    bmiDAO.getBMICalorieGoal() ?: 2000
                 }
-            } catch (e: ServerException) {
+                val freshActivityLevel = withContext(Dispatchers.IO) {
+                    bmiDAO.getBMILevel() ?: "MODERATE"
+                }
+                val freshAge = withContext(Dispatchers.IO) {
+                    bmiDAO.getBMIAge() ?: 0
+                }
+                val freshHeight = withContext(Dispatchers.IO) {
+                    bmiDAO.getBMIHeight() ?: 0
+                }
+                val freshWeight = withContext(Dispatchers.IO) {
+                    bmiDAO.getBMIWeight() ?: 0
+                }
+                val freshIsMale = withContext(Dispatchers.IO) {
+                    bmiDAO.getBMIGender() ?: true
+                }
+                val freshBPHistory = withContext(Dispatchers.IO) {
+                    bpDao.getRecentLogs(userId = 1, limit = 10).first()
+                }
+                val allFoods = withContext(Dispatchers.IO) {
+                    foodDao.GetAllFoodsForRAG()
+                }
+
+                val latestBP = freshBPHistory.firstOrNull()
+                val hypertensionLevel = latestBP?.hypertensionLevel ?: "Normal"
+                val sodiumLimit = when (hypertensionLevel) {
+                    "Hypertension Stage 1",
+                    "Hypertension Stage 2" -> 1500
+                    "Hypertensive Crisis"  -> 1000
+                    else                   -> 2300
+                }
+
+                // ✅ call Firebase RAG /ask endpoint
+                val response = RetrofitClient.askApi.ask(
+                    QueryRequest(
+                        question = userInput,
+                        userContext = UserContextRequest(
+                            userId = 1,
+                            age = freshAge,
+                            isMale = freshIsMale,
+                            height = freshHeight,
+                            weight = freshWeight,
+                            calorieGoal = freshCalorieGoal,
+                            activityLevel = freshActivityLevel,
+                            hypertensionLevel = hypertensionLevel,
+                            consumedCalories = 0.0,
+                            consumedSodium = 0.0,
+                            consumedProtein = 0.0,
+                            consumedSatFat = 0.0,
+                            sodiumLimit = sodiumLimit,
+                            todayFoodCount = 0,
+                            weeklyAvgCalories = 0.0,
+                            weeklyAvgSodium = 0.0,
+                            bpHistory = freshBPHistory.map {
+                                BPHistoryItemRequest(
+                                    systolic = it.systolic,
+                                    diastolic = it.diastolic,
+                                    hypertensionLevel = it.hypertensionLevel,
+                                    date = it.date
+                                )
+                            }
+                        ),
+                        foods = allFoods.map {
+                            FoodItemRequest(
+                                id = it.foodID ?: 0,
+                                name = it.foodName,
+                                calories = it.foodCalories,
+                                sodium = it.foodSodium,
+                                protein = it.foodProtein,
+                                satFat = it.foodSatFat,
+                                score = it.foodScore
+                            )
+                        }
+                    )
+                )
+
                 messageList.removeAt(messageList.lastIndex)
-                messageList.add(MessageModel("Error: " + e.message.toString(), "model"))
+                messageList.add(MessageModel(response.answer, "model"))
+
             } catch (e: Exception) {
                 messageList.removeAt(messageList.lastIndex)
-                messageList.add(MessageModel("Error: " + e.message.toString(), "model"))
+                messageList.add(MessageModel("Error: ${e.message}", "model"))
             }
         }
     }
