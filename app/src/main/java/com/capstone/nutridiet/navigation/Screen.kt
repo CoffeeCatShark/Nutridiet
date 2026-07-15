@@ -12,4 +12,5 @@ sealed class Screen(val route: String, val title: String) {
     object FoodPicker : Screen("foodpicker","FoodPickerScreen")
     object DietPlan : Screen("dietplan", "DietPlan")
     object BPHistory : Screen("bphistory", "BPHistory")
+    object NotificationSettings : Screen("notification_settings","NotificationSettings")
 }

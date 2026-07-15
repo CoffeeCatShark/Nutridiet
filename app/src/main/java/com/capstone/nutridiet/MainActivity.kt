@@ -1,18 +1,24 @@
 package com.capstone.nutridiet
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.capstone.nutridiet.database.BMIDatabase
 import com.capstone.nutridiet.database.FoodDatabase
+import com.capstone.nutridiet.notification.BPNotificationScheduler
 import com.capstone.nutridiet.ui.theme.NutridietTheme
 import com.capstone.nutridiet.utils.PreferencesManager
 import com.capstone.nutridiet.viewmodels.BMIViewModel
@@ -29,10 +35,41 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // permission granted — schedule notification
+            BPNotificationScheduler.scheduleNextNotification(this)
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // ✅ request notification permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    // already granted — schedule
+                    BPNotificationScheduler.scheduleNextNotification(this)
+                }
+                else -> {
+                    // request permission
+                    requestPermissionLauncher.launch(
+                        Manifest.permission.POST_NOTIFICATIONS
+                    )
+                }
+            }
+        } else {
+            // Android 12 and below — no permission needed
+            BPNotificationScheduler.scheduleNextNotification(this)
+        }
         //val chatViewModel = ViewModelProvider(this)[InsightViewModel::class.java]
+
+
         setContent {
             NutridietTheme {
                 val context = LocalContext.current

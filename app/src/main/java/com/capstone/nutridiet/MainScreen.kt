@@ -164,6 +164,9 @@ fun MainScreen(
             composable(Screen.BPHistory.route) {
                 BPHistoryScreen(viewModel = dietPlanVM)
             }
+            composable(Screen.NotificationSettings.route) {
+                NotificationSettingsScreen()
+            }
         }
     }
 }

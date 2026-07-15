@@ -224,6 +224,16 @@ fun Dashboard(
             }
         }
 
+        item {Spacer (modifier = Modifier.height(80.dp))
+            Button(
+                onClick = { navController.navigate(Screen.NotificationSettings.route) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("⏰ Set BP Reminder")
+            }
+        }
+
+
         item { Spacer(modifier = Modifier.height(80.dp)) }
 
 
