@@ -1,5 +1,6 @@
 package com.capstone.nutridiet
 
+import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -14,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.capstone.nutridiet.database.BMIDatabase
 import com.capstone.nutridiet.database.FoodDatabase
@@ -30,7 +30,6 @@ import com.capstone.nutridiet.viewmodels.DailyLogViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
-import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
@@ -86,7 +85,7 @@ class MainActivity : ComponentActivity() {
                 val dailyLogDao = foodDB.dailyLogDao
                 val bpDao = foodDB.bpLogDao
                 val chatViewModel: InsightViewModel = viewModel(
-                    factory = InsightViewModelFactory(bmiDAO, foodDao, bpDao)
+                    factory = InsightViewModelFactory(bmiDAO, foodDao, bpDao, context)
                 )
             ////////////////////////////////////////////////////////////////////////////
 

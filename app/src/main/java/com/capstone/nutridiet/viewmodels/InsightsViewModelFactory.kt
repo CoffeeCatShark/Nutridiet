@@ -1,10 +1,11 @@
+package com.capstone.nutridiet.viewmodels
+
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.capstone.nutridiet.database.BloodPressureDao
 import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.UserBMIDAO
-import com.capstone.nutridiet.viewmodels.InsightViewModel
 
 class InsightViewModelFactory(
     private val bmiDAO: UserBMIDAO,

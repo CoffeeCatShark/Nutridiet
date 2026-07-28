@@ -1,7 +1,7 @@
 package com.capstone.nutridiet
 
 import DietPlanViewModelFactory
-import InsightViewModelFactory
+import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -28,11 +28,9 @@ import com.capstone.nutridiet.viewmodels.CalorieViewModelFactory
 import com.capstone.nutridiet.viewmodels.DailyLogViewModel
 import com.capstone.nutridiet.viewmodels.DailyLogViewModelFactory
 import com.capstone.nutridiet.viewmodels.DietPlanViewModel
-import com.capstone.nutridiet.viewmodels.DietPlanViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
-import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import com.example.yourapp.screens.BMIScreen
 import com.example.yourapp.screens.CaloriesScreen
 import com.example.yourapp.screens.DailyDietScreen
