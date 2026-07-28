@@ -59,7 +59,32 @@ object UsageLimiter {
             (MAX_USES_PER_DAY - used).coerceAtLeast(0)
         }
     }
+    fun refundInsightUse(context: Context) {
+        refundUse(context, KEY_INSIGHT_COUNT, KEY_INSIGHT_DATE)
+    }
 
+    fun refundDietPlanUse(context: Context) {
+        refundUse(context, KEY_DIETPLAN_COUNT, KEY_DIETPLAN_DATE)
+    }
+
+    private fun refundUse(
+        context: Context,
+        countKey: String,
+        dateKey: String
+    ) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val today = LocalDate.now().toString()
+        val savedDate = prefs.getString(dateKey, "")
+
+        if (savedDate == today) {
+            val currentCount = prefs.getInt(countKey, 0)
+            if (currentCount > 0) {
+                prefs.edit()
+                    .putInt(countKey, currentCount - 1)
+                    .apply()
+            }
+        }
+    }
     private fun recordUse(
         context: Context,
         countKey: String,

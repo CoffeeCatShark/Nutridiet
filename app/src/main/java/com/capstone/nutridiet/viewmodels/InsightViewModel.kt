@@ -137,6 +137,10 @@ class InsightViewModel(
                 messageList.add(MessageModel(userInput, "user"))
                 messageList.add(MessageModel("Typing. . .", "model"))
 
+                // ✅ record use BEFORE calling API
+                UsageLimiter.recordInsightUse(context)
+                _remainingInsightUses.value = UsageLimiter.getRemainingInsightUses(context)
+
                 // fetch fresh data from DB
                 val freshCalorieGoal = withContext(Dispatchers.IO) {
                     bmiDAO.getBMICalorieGoal() ?: 2000
@@ -172,7 +176,6 @@ class InsightViewModel(
                     else                   -> 2300
                 }
 
-                // ✅ call Firebase RAG /ask endpoint
                 val response = RetrofitClient.askApi.ask(
                     QueryRequest(
                         question = userInput,
@@ -222,6 +225,11 @@ class InsightViewModel(
             } catch (e: Exception) {
                 messageList.removeAt(messageList.lastIndex)
                 messageList.add(MessageModel("Error: ${e.message}", "model"))
+
+                // ✅ refund use if API call fails
+                // so user doesn't lose a use due to network error
+                UsageLimiter.refundInsightUse(context)
+                _remainingInsightUses.value = UsageLimiter.getRemainingInsightUses(context)
             }
         }
     }
