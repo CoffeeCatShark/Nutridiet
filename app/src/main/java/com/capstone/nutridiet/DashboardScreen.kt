@@ -39,10 +39,10 @@ fun Dashboard(
     }
 
     val todayLog by dailyLogVM.dailyLog.collectAsState()
-    val bmi by bmiVM.bmiActual.collectAsState()
-    val weight by bmiVM.weight.collectAsState()
-    val height by bmiVM.height.collectAsState()
-    val age by bmiVM.age.collectAsState()
+    val bmi by bmiVM.bmiActual
+    val weight by bmiVM.weight
+    val height by bmiVM.height
+    val age by bmiVM.age
     val allFoods by foodVM.allFoods.collectAsState()
     val dailyCalorieGoal by calorieVM.dailyCalorieGoal.collectAsState()
     val activityLevel by calorieVM.currentActivityLevel.collectAsState()
