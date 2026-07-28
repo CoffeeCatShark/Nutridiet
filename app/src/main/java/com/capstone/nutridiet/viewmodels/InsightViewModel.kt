@@ -1,5 +1,6 @@
 package com.capstone.nutridiet.viewmodels
 
+import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,10 +13,13 @@ import com.capstone.nutridiet.network.FoodItemRequest
 import com.capstone.nutridiet.network.QueryRequest
 import com.capstone.nutridiet.network.RetrofitClient
 import com.capstone.nutridiet.network.UserContextRequest
+import com.capstone.nutridiet.utils.UsageLimiter
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.ServerException
 import com.google.ai.client.generativeai.type.content
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,9 +27,13 @@ import kotlinx.coroutines.withContext
 class InsightViewModel(
     private val bmiDAO: UserBMIDAO,
     private val foodDao: FoodDao,
-    private val bpDao: BloodPressureDao
+    private val bpDao: BloodPressureDao,
+    private val context: Context
 ) : ViewModel() {
-
+    private val _remainingInsightUses = MutableStateFlow(
+        UsageLimiter.getRemainingInsightUses(context)
+    )
+    val remainingInsightUses: StateFlow<Int> = _remainingInsightUses
     private var generativeModel: GenerativeModel? = null
     private var chat: com.google.ai.client.generativeai.Chat? = null
 
@@ -112,6 +120,19 @@ class InsightViewModel(
 
     fun sendMessage(userInput: String) {
         viewModelScope.launch {
+
+            if (!UsageLimiter.canUseInsights(context)) {
+                messageList.add(MessageModel(userInput, "user"))
+                messageList.add(
+                    MessageModel(
+                        "⚠️ You have reached your daily limit of 5 AI Insights. " +
+                                "Your limit resets tomorrow. Please check back then!",
+                        "model"
+                    )
+                )
+                return@launch
+            }
+
             try {
                 messageList.add(MessageModel(userInput, "user"))
                 messageList.add(MessageModel("Typing. . .", "model"))

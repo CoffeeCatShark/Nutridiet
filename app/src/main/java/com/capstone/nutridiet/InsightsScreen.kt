@@ -27,32 +27,52 @@ import com.capstone.nutridiet.viewmodels.MessageModel
 
 @Composable
 fun InsightsScreen(viewModel: InsightViewModel) {
+    val remainingUses by viewModel.remainingInsightUses.collectAsState()
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Header
+    Column(modifier = Modifier.fillMaxSize()) {
         AppHeader()
 
-        // Message list takes all remaining space
+        // ✅ show remaining uses
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (remainingUses > 0)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Text(
+                text = if (remainingUses > 0)
+                    "💬 $remainingUses / 5 AI queries remaining today"
+                else
+                    "⚠️ Daily limit reached. Resets tomorrow.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
+
         MessageList(
             modifier = Modifier
-                .weight(1f)  // ✅ pushes input to bottom
+                .weight(1f)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             messageList = viewModel.messageList
         )
 
-        // Input always stays at the bottom
-        HorizontalDivider()
+        // ✅ disable input when limit reached
         MessageInput(
-            onMessageSend = { viewModel.sendMessage(it) }
+            onMessageSend = { viewModel.sendMessage(it) },
+            enabled = remainingUses > 0
         )
     }
 }
 
 @Composable
-fun MessageInput(onMessageSend: (String) -> Unit) {
+fun MessageInput(onMessageSend: (String) -> Unit,
+                 enabled: Boolean = true) {
     var message by remember { mutableStateOf("") }
 
     Row(
@@ -67,13 +87,22 @@ fun MessageInput(onMessageSend: (String) -> Unit) {
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 56.dp),  // ✅ heightIn instead of fixed height
-            placeholder = { Text("Ask something...") }
+            placeholder = {
+                Text(
+                    if (enabled) "Ask something..."
+                    else "Daily limit reached. Try again tomorrow."
+                )
+            },
+            enabled = enabled
         )
-        IconButton(onClick = {
-            if (message.isBlank()) return@IconButton
-            onMessageSend(message)
-            message = ""
-        }) {
+        IconButton(
+            onClick = {
+                if (message.isBlank()) return@IconButton
+                onMessageSend(message)
+                message = ""
+            },
+            enabled = enabled && message.isNotBlank()  // ✅ disable button too
+        ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Send"

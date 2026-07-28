@@ -133,7 +133,7 @@ fun Dashboard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Weight: ${weight} lbs  •  Height: ${height} in  •  Age: ${age}",
+                        text = "Height: ${height} cm  •  Weight: ${weight} kg",  // ✅ metric
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

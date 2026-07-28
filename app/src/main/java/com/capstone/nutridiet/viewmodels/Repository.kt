@@ -33,8 +33,8 @@ class BMIRepository(private val dao: UserBMIDAO) {
             dao.UpsertBMIData(
                 UserBMIData(
                     bmiID = 0,
-                    height = 170,
-                    weight = 60,
+                    height = 170,   // ✅ cm default
+                    weight = 60,    // ✅ kg default
                     age = 25,
                     isMale = true,
                     activityLevel = BMICalorieUtils.ActivityLevel.MODERATE.name,
@@ -87,13 +87,16 @@ class BMIRepository(private val dao: UserBMIDAO) {
         }
     }
 
-    fun calculateBMI(weightLbs: Int, heightIn: Int) {
-        if (weightLbs != 0 && heightIn != 0) {
-            bmiActual.value = (weightLbs * 703) / (heightIn * heightIn).toDouble()
+    fun calculateBMI(weightKg: Int, heightCm: Int) {
+        if (weightKg != 0 && heightCm != 0) {
+            // ✅ metric formula: weight(kg) / height(m)²
+            val heightM = heightCm / 100.0
+            bmiActual.value = weightKg / (heightM * heightM)
         } else {
             bmiActual.value = 9.9876
         }
     }
+
 
     suspend fun setActivityLevel(level: BMICalorieUtils.ActivityLevel) {
         _activityLevel.value = level
@@ -127,11 +130,18 @@ class BMIRepository(private val dao: UserBMIDAO) {
         _activityLevel.value = BMICalorieUtils.ActivityLevel.fromString(activityString)
     }
 
-    fun calculateBMR(weight: Int, height: Int, age: Int, isMale: Boolean = true): Double {
+    fun calculateBMR(
+        weight: Int,  // kg
+        height: Int,  // cm
+        age: Int,
+        isMale: Boolean = true
+    ): Double {
         return if (isMale) {
-            10 * weight + 6.25 * height - 5 * age + 5
+            // ✅ metric formula for male
+            (10 * weight) + (6.25 * height) - (5 * age) + 5
         } else {
-            10 * weight + 6.25 * height - 5 * age - 161
+            // ✅ metric formula for female
+            (10 * weight) + (6.25 * height) - (5 * age) - 161
         }
     }
 

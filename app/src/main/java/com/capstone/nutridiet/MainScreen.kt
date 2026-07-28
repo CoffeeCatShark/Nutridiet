@@ -1,5 +1,7 @@
 package com.capstone.nutridiet
 
+import DietPlanViewModelFactory
+import InsightViewModelFactory
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -61,10 +63,10 @@ fun MainScreen(
         factory = DailyLogViewModelFactory(dailyLogDao, foodDao)
     )
     val dietPlanVM: DietPlanViewModel = viewModel(
-        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, bmiDao, bpLogDao)
+        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, bmiDao, bpLogDao,context)
     )
     val insightVM: InsightViewModel = viewModel(
-        factory = InsightViewModelFactory(bmiDao, foodDao, bpLogDao)  // ✅ bpLogDao instance
+        factory = InsightViewModelFactory(bmiDao, foodDao, bpLogDao,context)  // ✅ bpLogDao instance
     )
 
     val navController = rememberNavController()

@@ -51,8 +51,8 @@ fun OnboardingScreen(
         OutlinedTextField(
             value = height,
             onValueChange = { height = it },
-            label = { Text("Height (inches)") },
-            placeholder = { Text("e.g. 65") },
+            label = { Text("Height (cm)") },
+            placeholder = { Text("e.g. 170") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -62,8 +62,8 @@ fun OnboardingScreen(
         OutlinedTextField(
             value = weight,
             onValueChange = { weight = it },
-            label = { Text("Weight (lbs)") },
-            placeholder = { Text("e.g. 150") },
+            label = { Text("Weight (kg)") },
+            placeholder = { Text("e.g. 60") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true

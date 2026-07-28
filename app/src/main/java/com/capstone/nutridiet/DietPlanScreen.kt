@@ -18,7 +18,7 @@ import com.capstone.nutridiet.viewmodels.DietPlanViewModel
 
 @Composable
 fun DietPlanScreen(viewModel: DietPlanViewModel) {
-
+    val remainingUses by viewModel.remainingDietPlanUses.collectAsState()
     val systolic by viewModel.systolic.collectAsState()
     val diastolic by viewModel.diastolic.collectAsState()
     val bpResult by viewModel.bpResult.collectAsState()
@@ -156,17 +156,16 @@ fun DietPlanScreen(viewModel: DietPlanViewModel) {
                     Button(
                         onClick = { viewModel.generateDietPlan() },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isGenerating
+                        enabled = !isGenerating && remainingUses > 0  // ✅ disable when limit reached
                     ) {
                         if (isGenerating) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generating 7-Day Plan...")  // ✅ updated text
+                            Text("Generating 7-Day Plan...")
+                        } else if (remainingUses <= 0) {
+                            Text("Daily Limit Reached — Try Again Tomorrow")  // ✅
                         } else {
-                            Text("Generate 7-Day Diet Plan")  // ✅ updated text
+                            Text("Generate 7-Day Diet Plan ($remainingUses uses left)")  // ✅
                         }
                     }
                 }

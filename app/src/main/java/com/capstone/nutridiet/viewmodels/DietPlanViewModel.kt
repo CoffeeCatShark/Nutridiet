@@ -1,5 +1,6 @@
 package com.capstone.nutridiet.viewmodels
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.capstone.nutridiet.BuildConfig
@@ -18,6 +19,7 @@ import com.capstone.nutridiet.utils.BloodPressureAnalyzer
 import com.capstone.nutridiet.utils.BloodPressureResult
 import com.capstone.nutridiet.utils.DietaryGuidelinesHelper
 import com.capstone.nutridiet.utils.HypertensionLevel
+import com.capstone.nutridiet.utils.UsageLimiter
 import com.capstone.nutridiet.utils.ValidationResult
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.ServerException
@@ -35,9 +37,13 @@ class DietPlanViewModel(
     private val dietPlanDao: DietPlanDao,
     private val foodDao: FoodDao,
     private val userDAO: UserBMIDAO,
-    private val bpLogDao: BloodPressureDao
+    private val bpLogDao: BloodPressureDao,
+    private val context: Context
 ) : ViewModel() {
-
+    private val _remainingDietPlanUses = MutableStateFlow(
+        UsageLimiter.getRemainingDietPlanUses(context)
+    )
+    val remainingDietPlanUses: StateFlow<Int> = _remainingDietPlanUses
     // ─── GEMINI — only used for generation ────────────
     private val generativeModel = GenerativeModel(
         modelName = "gemini-2.5-flash-lite",
@@ -133,6 +139,12 @@ class DietPlanViewModel(
     fun generateDietPlan() {
         val result = _bpResult.value ?: run {
             _errorMessage.value = "Please analyze your blood pressure first."
+            return
+        }
+        if (!UsageLimiter.canUseDietPlan(context)) {
+            _errorMessage.value = "⚠️ You have reached your daily limit of " +
+                    "5 diet plan generations. " +
+                    "Your limit resets tomorrow!"
             return
         }
 
