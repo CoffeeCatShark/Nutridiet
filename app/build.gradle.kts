@@ -18,10 +18,6 @@ if (localPropertiesFile.exists()) {
     throw GradleException("local.properties file not found!")
 }
 
-val geminiApiKey = localProperties.getProperty("GEMINI_API_KEY")
-    ?: throw GradleException("GEMINI_API_KEY not found in local.properties")
-        ///JUST FOR AI
-
 android {
     namespace = "com.capstone.nutridiet"
     compileSdk = 36
@@ -35,8 +31,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
+        
     }
 
     buildTypes {
