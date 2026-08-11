@@ -151,6 +151,8 @@ class DietPlanViewModel(
             _errorMessage.value = "Please analyze your blood pressure first."
             return
         }
+
+        // check limit
         if (!UsageLimiter.canUseDietPlan(context)) {
             _errorMessage.value = "⚠️ You have reached your daily limit of " +
                     "5 diet plan generations. " +
@@ -167,6 +169,11 @@ class DietPlanViewModel(
             _isGenerating.value = true
             _errorMessage.value = null
             try {
+                // ✅ record use BEFORE calling API
+                UsageLimiter.recordDietPlanUse(context)
+                _remainingDietPlanUses.value =
+                    UsageLimiter.getRemainingDietPlanUses(context)
+
                 // fetch fresh data from DB
                 val allFoods = foodDao.GetAllFoodsForRAG()
                 val calorieGoal = userDAO.getBMICalorieGoal() ?: 2000
@@ -177,7 +184,6 @@ class DietPlanViewModel(
                 val activityLevel = userDAO.getBMILevel() ?: "MODERATE"
                 val recentBP = bpLogDao.getRecentLogs(1, 5).first()
 
-                // ✅ call Firebase RAG /generateDietPlan endpoint
                 val response = RetrofitClient.dietPlanApi.generateDietPlan(
                     DietPlanRequest(
                         systolic = result.systolic,
@@ -223,7 +229,6 @@ class DietPlanViewModel(
                     )
                 )
 
-                // save to Room DB
                 dietPlanDao.clearDietPlans()
                 dietPlanDao.saveDietPlan(
                     DietPlan(
@@ -233,12 +238,16 @@ class DietPlanViewModel(
                         generatedAt = LocalDate.now().toString()
                     )
                 )
-
-                // save citations
                 _citations.value = response.citations
 
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to generate diet plan. Please try again."
+
+                // ✅ refund use if API call fails
+                UsageLimiter.refundDietPlanUse(context)
+                _remainingDietPlanUses.value =
+                    UsageLimiter.getRemainingDietPlanUses(context)
+
             } finally {
                 _isGenerating.value = false
             }
