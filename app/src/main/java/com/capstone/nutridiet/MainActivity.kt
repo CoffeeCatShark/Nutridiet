@@ -12,14 +12,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.capstone.nutridiet.database.BMIDatabase
 import com.capstone.nutridiet.database.FoodDatabase
+import com.capstone.nutridiet.network.FirestoreRepository
 import com.capstone.nutridiet.notification.BPNotificationScheduler
 import com.capstone.nutridiet.ui.theme.NutridietTheme
+import com.capstone.nutridiet.utils.AnonymousUserManager
 import com.capstone.nutridiet.utils.PreferencesManager
 import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
@@ -30,6 +34,7 @@ import com.capstone.nutridiet.viewmodels.DailyLogViewModelFactory
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
+import com.example.yourapp.screens.PrivacyPolicyDialog
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
@@ -75,7 +80,11 @@ class MainActivity : ComponentActivity() {
 
                 val prefsManager = remember { PreferencesManager(context) }
                 val isFirstLaunch by prefsManager.isFirstLaunch.collectAsState(initial = null)
+                val hasGivenConsent by prefsManager.hasGivenConsent
+                    .collectAsState(initial = null)
 
+                // ✅ show privacy dialog on first launch
+                var showPrivacyDialog by remember { mutableStateOf(false) }
                 val bmiDB = BMIDatabase.getDatabase(context) // get singleton Room database
                 val bmiDAO = bmiDB.dao
 
@@ -99,12 +108,32 @@ class MainActivity : ComponentActivity() {
                 )
 
                 // Initialize BMI row once when app starts
-                LaunchedEffect(Unit) {
+                LaunchedEffect(isFirstLaunch) {
+                    if (isFirstLaunch == true) {
+                        showPrivacyDialog = true
+                    }
                     bmiVM.initialize()       // inserts default row if missing
                     calorieVM.initialize()   // loads activity level or other defaults
                     chatViewModel.initialize()
                 }
-
+                val firestoreRepo = remember { FirestoreRepository(context) }
+                if (showPrivacyDialog) {
+                    PrivacyPolicyDialog(
+                        onAccept = {
+                            showPrivacyDialog = false
+                            MainScope().launch {
+                                prefsManager.saveConsent(true)
+                                AnonymousUserManager.saveConsent(context)
+                            }
+                        },
+                        onDecline = {
+                            showPrivacyDialog = false
+                            MainScope().launch {
+                                prefsManager.saveConsent(false)
+                            }
+                        }
+                    )
+                }
                 if (isFirstLaunch != null) {
                     MainScreen(
                         chatViewModel = chatViewModel,

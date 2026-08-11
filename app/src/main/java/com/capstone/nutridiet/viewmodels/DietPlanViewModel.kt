@@ -12,9 +12,11 @@ import com.capstone.nutridiet.database.FoodDao
 import com.capstone.nutridiet.database.UserBMIDAO
 import com.capstone.nutridiet.network.BPHistoryItemRequest
 import com.capstone.nutridiet.network.DietPlanRequest
+import com.capstone.nutridiet.network.FirestoreRepository
 import com.capstone.nutridiet.network.FoodItemRequest
 import com.capstone.nutridiet.network.RetrofitClient
 import com.capstone.nutridiet.network.UserContextRequest
+import com.capstone.nutridiet.utils.AnonymousUserManager
 import com.capstone.nutridiet.utils.BloodPressureAnalyzer
 import com.capstone.nutridiet.utils.BloodPressureResult
 import com.capstone.nutridiet.utils.DietaryGuidelinesHelper
@@ -38,7 +40,8 @@ class DietPlanViewModel(
     private val foodDao: FoodDao,
     private val userDAO: UserBMIDAO,
     private val bpLogDao: BloodPressureDao,
-    private val context: Context
+    private val context: Context,
+    private val firestoreRepo: FirestoreRepository
 ) : ViewModel() {
     private val _remainingDietPlanUses = MutableStateFlow(
         UsageLimiter.getRemainingDietPlanUses(context)
@@ -128,6 +131,13 @@ class DietPlanViewModel(
                             date = LocalDate.now().toString()
                         )
                     )
+                    if (AnonymousUserManager.hasGivenConsent(context)) {
+                        firestoreRepo.uploadBloodPressureReading(
+                            systolic = validation.systolic,
+                            diastolic = validation.diastolic,
+                            hypertensionLevel = result.label
+                        )
+                    }
                 }
             }
         }

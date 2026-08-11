@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.capstone.nutridiet.database.BMIDatabase
 import com.capstone.nutridiet.database.FoodDatabase
 import com.capstone.nutridiet.navigation.Screen
+import com.capstone.nutridiet.network.FirestoreRepository
 import com.capstone.nutridiet.viewmodels.BMIViewModel
 import com.capstone.nutridiet.viewmodels.BMIViewModelFactory
 import com.capstone.nutridiet.viewmodels.CalorieViewModel
@@ -53,7 +55,7 @@ fun MainScreen(
     val dailyLogDao = foodDB.dailyLogDao
     val dietPlanDao = foodDB.dietPlanDao
     val bpLogDao = foodDB.bpLogDao  // ✅ instance from foodDB
-
+    val firestoreRepo = remember { FirestoreRepository(context) }
     val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
     val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDao))
     val foodVM: FoodViewModel = viewModel(factory = FoodViewModelFactory(foodDao))
@@ -61,7 +63,7 @@ fun MainScreen(
         factory = DailyLogViewModelFactory(dailyLogDao, foodDao)
     )
     val dietPlanVM: DietPlanViewModel = viewModel(
-        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, bmiDao, bpLogDao,context)
+        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, bmiDao, bpLogDao,context, firestoreRepo)
     )
     val insightVM: InsightViewModel = viewModel(
         factory = InsightViewModelFactory(bmiDao, foodDao, bpLogDao,context)  // ✅ bpLogDao instance

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "869815960816",
+    "firebase_url": "https://nutridiet-874a7-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "nutridiet-874a7",
+    "storage_bucket": "nutridiet-874a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869815960816:android:f8f039100d1e8313c92e35",
+        "android_client_info": {
+          "package_name": "com.capstone.nutridiet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDG7sZI3CSh3MalYpSWjY23blcQpWquExA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
