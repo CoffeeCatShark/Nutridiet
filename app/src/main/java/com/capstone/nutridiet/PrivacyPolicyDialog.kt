@@ -55,7 +55,7 @@ fun PrivacyPolicyDialog(
                 )
 
                 Text(
-                    text = "NutriDiet — Version 1.0",
+                    text = "NutriDiet — Version 1.3",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -76,7 +76,7 @@ fun PrivacyPolicyDialog(
                         title = "1. Introduction",
                         content = "Welcome to NutriDiet, a mobile application " +
                                 "developed as a capstone project by students of " +
-                                "[Your University Name]. This Privacy Policy " +
+                                "De La Salle Lipa. This Privacy Policy " +
                                 "explains how we collect, use, and protect your " +
                                 "information when you use our application."
                     )
@@ -157,7 +157,8 @@ fun PrivacyPolicyDialog(
                                 "• Decline data collection (app still works " +
                                 "locally without uploading data)\n" +
                                 "• Request deletion of your anonymous data by " +
-                                "contacting us at [your email]\n" +
+                                "contacting us at\n" +
+                                "christian_custodio@dlsl.edu.ph\n" +
                                 "• Know how your data is being used"
                     )
 
@@ -165,9 +166,10 @@ fun PrivacyPolicyDialog(
                         title = "9. Contact Us",
                         content = "For questions about this privacy policy, " +
                                 "contact us at:\n" +
-                                "[Your University/Team Email]\n" +
-                                "[Your University Name]\n" +
-                                "[Department Name]"
+                                "Email:\n" +
+                                "christian_custodio@dlsl.edu.ph\n" +
+                                "Christian Custodio\n" +
+                                "BSIT 4th year, IT4B"
                     )
 
                     PolicySection(

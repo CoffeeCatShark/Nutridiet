@@ -1,7 +1,6 @@
 package com.capstone.nutridiet
 
 import DietPlanViewModelFactory
-import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -33,6 +32,7 @@ import com.capstone.nutridiet.viewmodels.DietPlanViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModel
 import com.capstone.nutridiet.viewmodels.FoodViewModelFactory
 import com.capstone.nutridiet.viewmodels.InsightViewModel
+import com.capstone.nutridiet.viewmodels.InsightViewModelFactory
 import com.example.yourapp.screens.BMIScreen
 import com.example.yourapp.screens.CaloriesScreen
 import com.example.yourapp.screens.DailyDietScreen
@@ -54,8 +54,9 @@ fun MainScreen(
     val foodDao = foodDB.dao
     val dailyLogDao = foodDB.dailyLogDao
     val dietPlanDao = foodDB.dietPlanDao
-    val bpLogDao = foodDB.bpLogDao  // ✅ instance from foodDB
-    val firestoreRepo = remember { FirestoreRepository(context) }
+    val bpLogDao = foodDB.bpLogDao
+    val firestoreRepo = remember { FirestoreRepository(context) }  // ✅ already here
+
     val bmiVM: BMIViewModel = viewModel(factory = BMIViewModelFactory(bmiDao))
     val calorieVM: CalorieViewModel = viewModel(factory = CalorieViewModelFactory(bmiDao))
     val foodVM: FoodViewModel = viewModel(factory = FoodViewModelFactory(foodDao))
@@ -63,10 +64,12 @@ fun MainScreen(
         factory = DailyLogViewModelFactory(dailyLogDao, foodDao)
     )
     val dietPlanVM: DietPlanViewModel = viewModel(
-        factory = DietPlanViewModelFactory(dietPlanDao, foodDao, bmiDao, bpLogDao,context, firestoreRepo)
+        factory = DietPlanViewModelFactory(
+            dietPlanDao, foodDao, bmiDao, bpLogDao, context, firestoreRepo
+        )
     )
     val insightVM: InsightViewModel = viewModel(
-        factory = InsightViewModelFactory(bmiDao, foodDao, bpLogDao,context)  // ✅ bpLogDao instance
+        factory = InsightViewModelFactory(bmiDao, foodDao, bpLogDao, context)
     )
 
     val navController = rememberNavController()
@@ -113,6 +116,7 @@ fun MainScreen(
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(
                     bmiVM = bmiVM,
+                    firestoreRepo = firestoreRepo,  // ✅ added
                     onOnboardingComplete = {
                         onFirstLaunchComplete()
                         navController.navigate(Screen.Dashboard.route) {
@@ -142,12 +146,12 @@ fun MainScreen(
             composable(Screen.Calorie.route) {
                 CaloriesScreen(
                     viewModel = calorieVM,
-                    insightVM = insightVM,   // ✅ fixed variable name
+                    insightVM = insightVM,
                     dietPlanVM = dietPlanVM
                 )
             }
             composable(Screen.Insights.route) {
-                InsightsScreen(insightVM)    // ✅ use insightVM instead of chatViewModel
+                InsightsScreen(insightVM)
             }
             composable(Screen.FoodData.route) {
                 FoodDataScreen(foodVM)

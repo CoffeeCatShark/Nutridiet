@@ -8,14 +8,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.capstone.nutridiet.network.FirestoreRepository
+import com.capstone.nutridiet.utils.AnonymousUserManager
 import com.capstone.nutridiet.viewmodels.BMIViewModel
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardingScreen(
     bmiVM: BMIViewModel,
+    firestoreRepo: FirestoreRepository,  // ✅ added
     onOnboardingComplete: () -> Unit
 ) {
     var height by remember { mutableStateOf("") }
@@ -23,6 +29,8 @@ fun OnboardingScreen(
     var age by remember { mutableStateOf("") }
     var isMale by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val context = LocalContext.current  // ✅ added
 
     Column(
         modifier = Modifier
@@ -35,7 +43,7 @@ fun OnboardingScreen(
 
         // Header
         Text(
-            text = "Welcome to NutriDiet! ",
+            text = "Welcome to NutriDiet! 👋",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
@@ -55,7 +63,8 @@ fun OnboardingScreen(
             placeholder = { Text("e.g. 170") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
+            supportingText = { Text("Normal range: 100 - 250 cm") }
         )
 
         // Weight
@@ -66,7 +75,8 @@ fun OnboardingScreen(
             placeholder = { Text("e.g. 60") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
+            supportingText = { Text("Normal range: 20 - 300 kg") }
         )
 
         // Age
@@ -122,18 +132,42 @@ fun OnboardingScreen(
                 val w = weight.toIntOrNull()
                 val a = age.toIntOrNull()
 
-                if (h == null || w == null || a == null || h <= 0 || w <= 0 || a <= 0) {
-                    errorMessage = "Please fill in all fields with valid values."
-                    return@Button
-                }
+                when {
+                    h == null || w == null || a == null ->
+                        errorMessage = "Please fill in all fields."
+                    h !in 100..250 ->
+                        errorMessage = "Height must be between 100-250 cm."
+                    w !in 20..300 ->
+                        errorMessage = "Weight must be between 20-300 kg."
+                    a !in 1..120 ->
+                        errorMessage = "Please enter a valid age."
+                    else -> {
+                        errorMessage = null
 
-                bmiVM.UpdateBMI(
-                    height = h,
-                    weight = w,
-                    age = a,
-                    isMale = isMale
-                )
-                onOnboardingComplete()
+                        // ✅ save BMI data locally
+                        bmiVM.UpdateBMI(
+                            height = h,
+                            weight = w,
+                            age = a,
+                            isMale = isMale
+                        )
+
+                        // ✅ upload profile to Firestore if consent given
+                        if (AnonymousUserManager.hasGivenConsent(context)) {
+                            MainScope().launch {
+                                firestoreRepo.uploadUserProfile(
+                                    age = a,
+                                    isMale = isMale,
+                                    hypertensionLevel = "Unknown",
+                                    calorieGoal = 2000,
+                                    activityLevel = "MODERATE"
+                                )
+                            }
+                        }
+
+                        onOnboardingComplete()
+                    }
+                }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
